@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 userViewModel.setDarkTheme(systemDark)
             }
+
             val isDarkMode = userViewModel.userState.darkTheme
 
             MySpentAppTheme(isDarkMode = isDarkMode) {
@@ -129,6 +130,7 @@ fun AppNavigation(
                 PerfilScreen(
                     navController = navController,
                     userViewModel = userViewModel,
+                    cardViewModel = cardViewModel
                 )
             }
 
