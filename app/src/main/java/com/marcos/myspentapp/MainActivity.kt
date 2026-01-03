@@ -129,8 +129,7 @@ fun AppNavigation(
                 showBottomBar = true
                 PerfilScreen(
                     navController = navController,
-                    userViewModel = userViewModel,
-                    cardViewModel = cardViewModel
+                    userViewModel = userViewModel
                 )
             }
 

@@ -24,7 +24,9 @@ import androidx.compose.ui.unit.sp
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -40,8 +42,12 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.input.KeyboardType
+import com.marcos.myspentapp.ui.theme.colorLogo1
+import com.marcos.myspentapp.ui.theme.colorNegativo
 import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 
@@ -306,8 +312,8 @@ fun BottomBar(
             .drawBehind {
                 drawLine(
                     color = colorText.copy(alpha = 0.4f),
-                    start = androidx.compose.ui.geometry.Offset(0f, 0f), // topo
-                    end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                    start = Offset(0f, 0f), // topo
+                    end = Offset(size.width, 0f),
                     strokeWidth = 8f
                 )
             }
@@ -359,5 +365,89 @@ fun BottomBar(
                 )
             )
         }
+    }
+}
+
+@Composable
+fun SectorBalanco(
+    ganhos: Double,
+    gastos: Double,
+    modifier: Modifier = Modifier
+) {
+    val total = ganhos + gastos
+    if (total <= 0) return
+
+    val ganhoSweep = (ganhos / total * 360f).toFloat()
+    val gastoSweep = (gastos / total * 360f).toFloat()
+
+    val strokeWidth = 60.dp // espessura do anel
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            "Balanço Financeiro",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        Canvas(
+            modifier = Modifier.size(220.dp)
+        ) {
+            val strokePx = strokeWidth.toPx()
+            val radiusOffset = strokePx / 2
+
+            val arcSize = size.minDimension - strokePx
+            val topLeft = Offset(radiusOffset, radiusOffset)
+
+            var startAngle = -90f
+
+            drawArc(
+                color = colorLogo1,
+                startAngle = startAngle,
+                sweepAngle = ganhoSweep,
+                useCenter = false,
+                topLeft = topLeft,
+                size = androidx.compose.ui.geometry.Size(arcSize, arcSize),
+                style = Stroke(width = strokePx)
+            )
+
+            startAngle += ganhoSweep
+
+            drawArc(
+                color = colorNegativo,
+                startAngle = startAngle,
+                sweepAngle = gastoSweep,
+                useCenter = false,
+                topLeft = topLeft,
+                size = androidx.compose.ui.geometry.Size(arcSize, arcSize),
+                style = Stroke(width = strokePx)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // LEGENDA
+        Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
+            LegendItem(colorLogo1, "Ganhos")
+            LegendItem(colorNegativo, "Gastos")
+        }
+    }
+}
+
+
+@Composable
+fun LegendItem(color: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text, fontSize = 14.sp)
     }
 }

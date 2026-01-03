@@ -35,6 +35,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -50,6 +52,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -58,16 +62,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -84,6 +87,7 @@ import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -278,10 +282,60 @@ fun MySpentApp(
 
             Spacer(modifier.height(22.dp))
 
-            ListaDeGastos(
-                cardViewModel,
-                cashViewModel
-            )
+            // estado do menu
+            val pagerState = rememberPagerState(initialPage = 0) { 2 }
+            val scope = rememberCoroutineScope()
+
+            // MENU
+            TabRow(
+                selectedTabIndex = pagerState.currentPage,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Tab(
+                    selected = pagerState.currentPage == 0,
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(0)
+                        }
+                    },
+                    text = { Text("Lista") }
+                )
+
+                Tab(
+                    selected = pagerState.currentPage == 1,
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    },
+                    text = { Text("Gráfico") }
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        ListaDeGastos(
+                            cardViewModel = cardViewModel,
+                            cashViewModel = cashViewModel
+                        )
+                    }
+
+                    1 -> {
+                        SectorBalanco(
+                            ganhos = ganhosConvertidos,
+                            gastos = gastosConvertidos,
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
+            }
         }
 
         if (showDialogCash) {
@@ -314,7 +368,6 @@ fun CardGasto(
 ) {
     val context = LocalContext.current
     var showEditDialog by remember { mutableStateOf(false) }
-    var enabled by remember { mutableStateOf(enabled) }
 
     // moeda atual
     val currency by cashViewModel.selectedCurrency.collectAsState()
@@ -346,18 +399,12 @@ fun CardGasto(
             }
         }
     }
-    var modifierBase: Modifier
-    if(enabled) { modifierBase = modifier
+
+    // ⬇️ NÃO TEM CLICKABLE AQUI
+    val modifierBase = modifier
         .width(140.dp)
         .height(140.dp)
-        .clickable { showEditDialog = true }
-    } else {
-        modifierBase = modifier
-            .width(140.dp)
-            .height(140.dp)
-    }
 
-    // CARD
     Card(
         modifier = modifierBase,
         shape = MaterialTheme.shapes.medium,
@@ -395,10 +442,7 @@ fun CardGasto(
                     .fillMaxWidth()
                     .padding(start = 8.dp, top = 6.dp)
             ) {
-                Text(
-                    text = card.title,
-                    fontSize = 16.sp
-                )
+                Text(text = card.title, fontSize = 16.sp)
             }
 
             Row(
@@ -407,10 +451,7 @@ fun CardGasto(
                     .padding(end = 6.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    text = formatted,
-                    fontSize = 16.sp
-                )
+                Text(text = formatted, fontSize = 16.sp)
             }
         }
     }
@@ -449,9 +490,6 @@ fun CardGasto(
 }
 
 
-
-
-
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "FrequentlyChangingValue")
 @Composable
 fun ListaDeGastos(
@@ -459,29 +497,23 @@ fun ListaDeGastos(
     cashViewModel: CashViewModel
 ) {
     val gastos by cardViewModel.cards.collectAsState()
-    var enabled by remember { mutableStateOf(true) }
+    val selectedIds by cardViewModel.selectedIds.collectAsState()
 
     var showDialog by remember { mutableStateOf(false) }
-    val selectedIds = remember { mutableStateListOf<String>() }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
             if (selectedIds.isNotEmpty()) {
                 FloatingActionButton(
-                    onClick = {
-                        selectedIds.forEach { id ->
-                            cardViewModel.removeCard(id)
-                        }
-                        selectedIds.clear()
-                    },
+                    onClick = { cardViewModel.removeSelected() },
                     containerColor = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(50.dp)
                 ) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Remover cards selecionados",
-                        tint = White
+                        contentDescription = "Remover cards",
+                        tint = Color.White
                     )
                 }
             } else {
@@ -491,9 +523,9 @@ fun ListaDeGastos(
                     shape = RoundedCornerShape(50.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
+                        Icons.Default.Add,
                         contentDescription = "Adicionar card",
-                        tint = White
+                        tint = Color.White
                     )
                 }
             }
@@ -534,35 +566,32 @@ fun ListaDeGastos(
                         val itemInfo = gridState.layoutInfo.visibleItemsInfo
                             .firstOrNull { it.index == index }
 
+                        val isSelected = selectedIds.contains(gasto.id)
+
                         val modifierBase = Modifier
                             .border(
-                                width = if (selectedIds.contains(gasto.id)) 1.5.dp else (-1).dp,
-                                color = Color.Red,
+                                width = if (isSelected) 1.5.dp else 0.dp,
+                                color = if (isSelected)
+                                    MaterialTheme.colorScheme.error
+                                else Color.Transparent,
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .combinedClickable(
                                 onClick = {
-                                    if (selectedIds.isEmpty()) {
-                                        enabled = true
-                                    } else {
-                                        if (selectedIds.contains(gasto.id)) {
-                                            selectedIds.remove(gasto.id)
-                                        } else {
-                                            selectedIds.add(gasto.id)
-                                        }
+                                    if (selectedIds.isNotEmpty()) {
+                                        cardViewModel.toggleSelection(gasto.id)
                                     }
                                 },
                                 onLongClick = {
-                                    if (!selectedIds.contains(gasto.id)) {
-                                        selectedIds.add(gasto.id)
-                                    }
+                                    cardViewModel.toggleSelection(gasto.id)
                                 }
                             )
 
+                        // ---------- ITEM AINDA NÃO MEDIDO (ENTRADA) ----------
                         if (itemInfo == null) {
                             CardGasto(
                                 card = gasto,
-                                enabled = enabled,
+                                enabled = selectedIds.isEmpty(),
                                 cashViewModel = cashViewModel,
                                 cardViewModel = cardViewModel,
                                 modifier = modifierBase.graphicsLayer {
@@ -593,7 +622,7 @@ fun ListaDeGastos(
 
                         CardGasto(
                             card = gasto,
-                            enabled = enabled,
+                            enabled = selectedIds.isEmpty(),
                             cashViewModel = cashViewModel,
                             cardViewModel = cardViewModel,
                             modifier = modifierBase.graphicsLayer {
@@ -608,8 +637,6 @@ fun ListaDeGastos(
         }
     }
 
-
-    // ADIÇÃO
     if (showDialog) {
 
         var contentVisible by remember { mutableStateOf(false) }
@@ -668,6 +695,7 @@ fun ListaDeGastos(
         }
     }
 }
+
 
 
 

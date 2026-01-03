@@ -15,8 +15,9 @@ Próximas etapas a polir e melhorar: MainSreen -> aparencia dos cards; referenci
 - [ x ] Funcionalidade 3: [Consumo de API para conversão de moedas]
 - [ x ] Funcionalidade 4: [Telas de acesso] -- parte da integração CRUID
 - [ x ] Funcionalidade 5: [Integração com a galeria]
-- [ x ] Funcionalidade 6: [Integração de tema dinâmico usando material theme] -- ainda não implementado na tela de lançamento
+- [ x ] Funcionalidade 6: [Integração de tema dinâmico usando material theme]
 - [ x ] Funcionalidade 7: [ Balanço entre ganhos <-> gastos ]
+- [ x ] Funcionalidade 8: [ Implementação de gráfico para balanço entre ganhos e gastos]
 ---
 
 > [!WARNING]
