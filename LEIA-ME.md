@@ -2,10 +2,12 @@
 
 Desenvolvimento de cerca de 60 a 80 por cento do app, implementação de telas de acesso, CRUID para os gastos (falta polir) e para usuário (falta exclusão e polir);
 App não está responsivo/adaptativo ainda;
-Próximas etapas a polir e melhorar: MainSreen -> aparencia dos cards; referencias da moeda;
-                                    PerfilScreen -> aparencia de CardConf;
-                                    Integração a dados persistentes;
-                                    Material Theme na tela de lançamento.
+Próximas etapas a polir e melhorar: MainSreen -> aparencia dos cards; referencias da moeda; [ X ]
+                                    PerfilScreen -> aparencia de CardConf; [ ]
+                                    Integração a dados persistentes; [ ]
+                                    Material Theme na tela de lançamento. [ X ]
+                                    Comentários nas funções -> "Documentação" [ X ]
+                                    Aperfeiçoar sistema de registro e login [ ]
 ---
 
 ## Funcionalidades Principais -- Entrega 01

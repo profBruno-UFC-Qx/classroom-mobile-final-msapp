@@ -19,6 +19,7 @@ import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.CashViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 
+// Inicializar ViewModels
 val userViewModel = UserViewModel()
 val cardViewModel = CardViewModel()
 val cashViewModel = CashViewModel()
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
+            // Checagem do tema do dispositivo
             val systemDark = isSystemInDarkTheme()
             LaunchedEffect(Unit) {
                 userViewModel.setDarkTheme(systemDark)
@@ -88,6 +90,7 @@ fun AppNavigation(
         }
     ) { padding ->
 
+        // Navegação do APP
         NavHost(
             navController = navController,
             startDestination = LOGIN,

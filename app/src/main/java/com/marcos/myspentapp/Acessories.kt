@@ -74,6 +74,7 @@ fun DetalheGasto(
         }
     }
 
+    // Carregar imagem (id visual do gasto)
     val bitmap: ImageBitmap? = remember(currentImageUri) {
         currentImageUri?.let { uri ->
             try {
@@ -89,7 +90,7 @@ fun DetalheGasto(
         }
     }
 
-    // Dialog
+    // Dialog para gastos (add e editar)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -130,6 +131,8 @@ fun DetalheGasto(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Informações do gasto (titulo e valor)
+            // Talvez eu ainda adicione tipo com enum (lazer, trabalho, alimentação, etc)
             OutlinedTextField(
                 value = currentTitle,
                 onValueChange = { currentTitle = it },
@@ -155,7 +158,7 @@ fun DetalheGasto(
             OutlinedTextField(
                 value = currentValue,
                 onValueChange = { currentValue = it },
-                label = { Text("Valor (ex: 100.00)") },
+                label = { Text("Valor em R$") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = androidx.compose.ui.text.input.ImeAction.Done,
@@ -174,6 +177,7 @@ fun DetalheGasto(
             )
         }
 
+        // Botões de ação
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -220,6 +224,7 @@ fun DetalheInOut(
 
     var currentIn by remember { mutableStateOf(cashIn) }
 
+    // Adicionar ganhos ao saldo
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -242,7 +247,7 @@ fun DetalheInOut(
             OutlinedTextField(
                 value = currentIn,
                 onValueChange = { currentIn = it },
-                label = { Text("Entrada") },
+                label = { Text("Entrada em R$") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = androidx.compose.ui.text.input.ImeAction.Next,
@@ -263,6 +268,7 @@ fun DetalheInOut(
 
         }
 
+        // Botões de ação
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -324,7 +330,7 @@ fun BottomBar(
             modifier = Modifier.fillMaxSize()
         ) {
 
-            // Início
+            // MainScreen
             NavigationBarItem(
                 selected = selectedItem == 0,
                 onClick = { },
@@ -345,7 +351,7 @@ fun BottomBar(
                 )
             )
 
-            // Perfil
+            // PerfilScreen
             NavigationBarItem(
                 selected = selectedItem == 1,
                 onClick = { onItemSelected(1) },
@@ -380,10 +386,13 @@ fun SectorBalanco(
     val ganhoSweep = (ganhos / total * 360f).toFloat()
     val gastoSweep = (gastos / total * 360f).toFloat()
 
-    val strokeWidth = 60.dp // espessura do anel
+    val strokeWidth = 60.dp
 
+    // Gráfico ganhos/gastos
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(top = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -394,8 +403,9 @@ fun SectorBalanco(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        // Design do gráfico
         Canvas(
-            modifier = Modifier.size(220.dp)
+            modifier = Modifier.size(280.dp)
         ) {
             val strokePx = strokeWidth.toPx()
             val radiusOffset = strokePx / 2

@@ -11,6 +11,8 @@ class CardViewModel : ViewModel() {
     val cards = _cards.asStateFlow()
     private val _selectedIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedIds = _selectedIds.asStateFlow()
+    private val _editingCard = MutableStateFlow<CardUiState?>(null)
+    val editingCard = _editingCard.asStateFlow()
 
     fun addCard(card: CardUiState) {
         _cards.update { current ->
@@ -48,6 +50,17 @@ class CardViewModel : ViewModel() {
         }
         clearSelection()
     }
+
+
+
+    fun openEdit(card: CardUiState) {
+        _editingCard.value = card
+    }
+
+    fun closeEdit() {
+        _editingCard.value = null
+    }
+
 }
 
 

@@ -1,7 +1,6 @@
 package com.marcos.myspentapp.ui.state
 
 import android.net.Uri
-import androidx.compose.runtime.mutableStateListOf
 import java.util.UUID
 
 data class CardUiState (

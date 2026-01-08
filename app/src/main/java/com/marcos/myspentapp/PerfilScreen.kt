@@ -52,6 +52,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.theme.colorTextSecondary
+import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -86,6 +87,7 @@ fun PerfilScreen(
     }
 
     Scaffold(
+        // TopBar
         topBar = {
             TopAppBar(
                 title = {
@@ -114,6 +116,7 @@ fun PerfilScreen(
             )
         }
     ) {
+        // Layout Perfil
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -132,7 +135,7 @@ fun PerfilScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // FOTO
+                // Foto de usuário
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -159,6 +162,7 @@ fun PerfilScreen(
 
                 Spacer(Modifier.width(20.dp))
 
+                // Informações de usuários
                 Column {
                     Text(
                         user.nome,
@@ -173,7 +177,7 @@ fun PerfilScreen(
 
             Spacer(Modifier.height(30.dp))
 
-            // OPÇÕES
+            // OPÇÕES ---> talvez eu mude o design dessa parte
             ProfileOptionItem(
                 icon = Icons.Default.Person,
                 text = "Editar Informações",
@@ -214,6 +218,7 @@ fun ProfileOptionItem(
     color: Color = MaterialTheme.colorScheme.onBackground,
     onClick: () -> Unit = {}
 ) {
+    // ITEM DE OPÇÕES
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,9 +255,11 @@ fun ProfileOptionItem(
 fun CardConf(
     visible: Boolean,
     onDismiss: () -> Unit,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    cardViewModel: CardViewModel = CardViewModel()
 ) {
 
+    // Configurações de usuário
     val user = userViewModel.userState
     val isDarkMode = user.darkTheme
 
@@ -322,7 +329,7 @@ fun CardConf(
 
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth(0.5f)
                         .background(colorTextSecondary, RoundedCornerShape(12.dp))
                         .padding(16.dp)
                 ) {
@@ -355,6 +362,7 @@ fun CardConf(
 
                 Spacer(Modifier.height(10.dp))
 
+                // Botão salvar novo código
                 Button(
                     onClick = {
                         if (newCode.isNotBlank()) {
@@ -381,7 +389,7 @@ fun CardConf(
 
                 Spacer(Modifier.height(30.dp))
 
-                // TEMA
+                // TEMA (escuro <-> claro)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -437,7 +445,7 @@ fun CardConf(
         }
     }
 
-    // CONFIRMAR EXCLUSÃO
+    // Dialog para confirmar exclusão
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -457,6 +465,7 @@ fun CardConf(
                 TextButton(
                     onClick = {
                         userViewModel.deleteUser()
+                        cardViewModel.clear()
                         showDeleteDialog = false
                         onDismiss()
                     }
@@ -499,7 +508,7 @@ fun PerfilEdit(
 
     val context = LocalContext.current
 
-    // abrir galeria
+    // Abrir galeria
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -540,16 +549,7 @@ fun PerfilEdit(
                     titleContentColor = MaterialTheme.colorScheme.primary
                 ),
                 expandedHeight = 30.dp,
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .drawBehind {
-                        drawLine(
-                            color = colorText.copy(alpha = 0.4f),
-                            start = androidx.compose.ui.geometry.Offset(0f, size.height - 1f),
-                            end = androidx.compose.ui.geometry.Offset(size.width, size.height - 1f),
-                            strokeWidth = 8f
-                        )
-                    }
+                modifier = Modifier.background(MaterialTheme.colorScheme.background)
             )
         }
     ) { innerPadding ->
@@ -561,6 +561,8 @@ fun PerfilEdit(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+        // Alterar informações de usuário
             // FOTO DE PERFIL
             Box(
                 modifier = Modifier

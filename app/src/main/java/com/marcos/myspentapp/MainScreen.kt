@@ -79,6 +79,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -126,6 +127,17 @@ fun TopBar(cashViewModel: CashViewModel) {
                     modifier = Modifier.padding(start = 10.dp)
                 )
 
+            // Menu de seleção de moeda
+                // Mostra cifra da moeda selecionada
+                val currencySymbol = when (selectedCurrency) {
+                    "BRL" -> "R$"
+                    "USD" -> "$"
+                    "EUR" -> "€"
+                    "GBP" -> "£"
+                    "JPY" -> "¥"
+                    else -> selectedCurrency
+                }
+
                 Row(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.End,
@@ -134,8 +146,8 @@ fun TopBar(cashViewModel: CashViewModel) {
                         .clickable { expanded = true }
                 ) {
                     Text(
-                        selectedCurrency,
-                        fontSize = 16.sp,
+                        currencySymbol,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 2.dp)
@@ -148,15 +160,31 @@ fun TopBar(cashViewModel: CashViewModel) {
                         modifier = Modifier.size(28.dp),
                     )
 
+                    // Escolher moeda
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
                         containerColor = MaterialTheme.colorScheme.surface,
+                        offset = DpOffset((-10).dp, 0.dp),
+                        modifier = Modifier.width(50.dp)
                     ) {
                         listOf("BRL", "USD", "EUR", "GBP", "JPY").forEach { currency ->
+                            val symbol = when (currency) {
+                                "BRL" -> "R$"
+                                "USD" -> "$"
+                                "EUR" -> "€"
+                                "GBP" -> "£"
+                                "JPY" -> "¥"
+                                else -> ""
+                            }
                             DropdownMenuItem(
                                 text = {
-                                    Text(currency, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(
+                                        symbol,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 },
                                 onClick = {
                                     expanded = false
@@ -207,7 +235,8 @@ fun MySpentApp(
     val ganhosFormatados = cashViewModel.formatCurrency(ganhosConvertidos)
     val gastosFormatados = cashViewModel.formatCurrency(gastosConvertidos)
 
-
+    // Layout principal
+    // TopBar -> Surface -> Lista/Gráfico -> BottomBar
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -227,6 +256,7 @@ fun MySpentApp(
 
             Spacer(modifier.height(22.dp))
 
+            // Ganhos <--> Total de gastos
             Surface(
                 modifier = modifier
                     .padding(2.dp)
@@ -264,7 +294,7 @@ fun MySpentApp(
                         color = Color.Gray
                     )
 
-                    // Gastos convertidos
+                    // Gastos convertidos e somados
                     Column(
                         modifier = Modifier.weight(1f).padding(end = 20.dp),
                         horizontalAlignment = Alignment.End
@@ -282,11 +312,11 @@ fun MySpentApp(
 
             Spacer(modifier.height(22.dp))
 
-            // estado do menu
+            // Estado do menu
             val pagerState = rememberPagerState(initialPage = 0) { 2 }
             val scope = rememberCoroutineScope()
 
-            // MENU
+            // Lista -- Gráfico
             TabRow(
                 selectedTabIndex = pagerState.currentPage,
                 containerColor = MaterialTheme.colorScheme.background,
@@ -338,6 +368,7 @@ fun MySpentApp(
             }
         }
 
+        // Dialog para adicionar ganhos
         if (showDialogCash) {
             Dialog( onDismissRequest = { showDialogCash = false } ) {
                 Card(
@@ -361,15 +392,11 @@ fun MySpentApp(
 @Composable
 fun CardGasto(
     card: CardUiState,
-    enabled: Boolean,
     modifier: Modifier,
     cashViewModel: CashViewModel,
-    cardViewModel: CardViewModel
 ) {
     val context = LocalContext.current
-    var showEditDialog by remember { mutableStateOf(false) }
 
-    // moeda atual
     val currency by cashViewModel.selectedCurrency.collectAsState()
     val rates by cashViewModel.rates.collectAsState()
 
@@ -378,7 +405,7 @@ fun CardGasto(
     }
     val formatted = cashViewModel.formatCurrency(convertedValue)
 
-    // imagem
+    // Selecionar foto do card
     val bitmap: ImageBitmap? = remember(card.imageUri) {
         card.imageUri?.let { uri ->
             try {
@@ -400,11 +427,11 @@ fun CardGasto(
         }
     }
 
-    // ⬇️ NÃO TEM CLICKABLE AQUI
     val modifierBase = modifier
         .width(140.dp)
         .height(140.dp)
 
+    // Layout do card
     Card(
         modifier = modifierBase,
         shape = MaterialTheme.shapes.medium,
@@ -425,7 +452,7 @@ fun CardGasto(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.5f)
+                        .fillMaxHeight(0.6f)
                 )
             } else {
                 Image(
@@ -433,57 +460,19 @@ fun CardGasto(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.5f)
+                        .fillMaxHeight(0.6f)
                 )
             }
 
             Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, top = 6.dp)
+                    .fillMaxSize()
+                    .padding(start = 10.dp, top = 10.dp, end = 10.dp)
             ) {
-                Text(text = card.title, fontSize = 16.sp)
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 6.dp, bottom = 6.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
+                Text(text = card.title.uppercase(), fontSize = 16.sp)
                 Text(text = formatted, fontSize = 16.sp)
-            }
-        }
-    }
-
-    if (showEditDialog) {
-        Dialog(onDismissRequest = { showEditDialog = false }) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .height(500.dp)
-            ) {
-                DetalheGasto(
-                    imageRes = R.drawable.ms1,
-                    imageUri = card.imageUri,
-                    title = card.title,
-                    value = card.value.toString(),
-                    onFechar = { showEditDialog = false }
-                ) { newImage, newTitle, newValue ->
-
-                    cardViewModel.updateCard(
-                        id = card.id,
-                        updatedCard = card.copy(
-                            imageUri = newImage,
-                            title = newTitle,
-                            value = newValue.toDoubleOrNull() ?: card.value
-                        )
-                    )
-
-                    showEditDialog = false
-                }
             }
         }
     }
@@ -498,9 +487,11 @@ fun ListaDeGastos(
 ) {
     val gastos by cardViewModel.cards.collectAsState()
     val selectedIds by cardViewModel.selectedIds.collectAsState()
-
     var showDialog by remember { mutableStateOf(false) }
+    val editingCard by cardViewModel.editingCard.collectAsState()
 
+
+    // Layout Lista
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
@@ -540,6 +531,7 @@ fun ListaDeGastos(
             contentAlignment = Alignment.Center
         ) {
 
+            // Aparência da lista (vazia ou não)
             if (gastos.isEmpty()) {
                 Text(
                     text = "Nenhum gasto adicionado ainda.",
@@ -558,6 +550,7 @@ fun ListaDeGastos(
                     contentPadding = PaddingValues(1.dp)
                 ) {
 
+                    // Organização dos cards
                     itemsIndexed(
                         items = gastos,
                         key = { _, item -> item.id }
@@ -578,7 +571,9 @@ fun ListaDeGastos(
                             )
                             .combinedClickable(
                                 onClick = {
-                                    if (selectedIds.isNotEmpty()) {
+                                    if (selectedIds.isEmpty()) {
+                                        cardViewModel.openEdit(gasto)
+                                    } else {
                                         cardViewModel.toggleSelection(gasto.id)
                                     }
                                 },
@@ -587,13 +582,12 @@ fun ListaDeGastos(
                                 }
                             )
 
-                        // ---------- ITEM AINDA NÃO MEDIDO (ENTRADA) ----------
+
+                        // ENTRADA
                         if (itemInfo == null) {
                             CardGasto(
                                 card = gasto,
-                                enabled = selectedIds.isEmpty(),
                                 cashViewModel = cashViewModel,
-                                cardViewModel = cardViewModel,
                                 modifier = modifierBase.graphicsLayer {
                                     alpha = 0f
                                     scaleX = 0.85f
@@ -622,9 +616,7 @@ fun ListaDeGastos(
 
                         CardGasto(
                             card = gasto,
-                            enabled = selectedIds.isEmpty(),
                             cashViewModel = cashViewModel,
-                            cardViewModel = cardViewModel,
                             modifier = modifierBase.graphicsLayer {
                                 this.alpha = alpha
                                 scaleX = scale
@@ -637,6 +629,7 @@ fun ListaDeGastos(
         }
     }
 
+    // Dialog para adicionar card
     if (showDialog) {
 
         var contentVisible by remember { mutableStateOf(false) }
@@ -691,6 +684,39 @@ fun ListaDeGastos(
             if (!contentVisible) {
                 delay(300L)
                 showDialog = false
+            }
+        }
+    }
+
+    // Dialog para editar card
+    if (editingCard != null) {
+        Dialog(onDismissRequest = { cardViewModel.closeEdit() }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .height(500.dp)
+            ) {
+                DetalheGasto(
+                    imageRes = R.drawable.ms1,
+                    imageUri = editingCard!!.imageUri,
+                    title = editingCard!!.title,
+                    value = editingCard!!.value.toString(),
+                    onFechar = { cardViewModel.closeEdit() }
+                ) { newImage, newTitle, newValue ->
+
+                    cardViewModel.updateCard(
+                        id = editingCard!!.id,
+                        updatedCard = editingCard!!.copy(
+                            imageUri = newImage,
+                            title = newTitle,
+                            value = newValue.toDoubleOrNull() ?: editingCard!!.value
+                        )
+                    )
+
+                    cardViewModel.closeEdit()
+                }
             }
         }
     }

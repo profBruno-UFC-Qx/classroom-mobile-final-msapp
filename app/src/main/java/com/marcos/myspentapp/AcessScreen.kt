@@ -49,6 +49,8 @@ fun LoginScreen(
     var senha by remember { mutableStateOf("") }
 
     Scaffold {
+
+        // Layout login
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.background)
@@ -74,6 +76,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(70.dp))
 
+            // Verificação com a base
             if(itensChecked) {
                 Text(
                     text = "Informações Incorretas",
@@ -130,6 +133,8 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // Botão Entrar
+            // de LoginScreen para MainScreen
             Button(
                 onClick = {
                     if(user.email == email && user.senha == senha) {
@@ -169,6 +174,7 @@ fun LoginScreen(
                     )
                 }
 
+                // de LoginScreen para RegisterScreen
                 TextButton(
                     onClick = {
                         navController.navigate("register")
@@ -200,6 +206,8 @@ fun RegisterScreen(
     var erroMsg by remember { mutableStateOf("") }
 
     Scaffold {
+
+        // Informações para criar conta
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.background)
@@ -311,6 +319,9 @@ fun RegisterScreen(
             Spacer(Modifier.height(12.dp))
 
             Button(
+
+                // Verificação de campos
+                // Se tudo preenchido e correto, avança para parte 2
                 onClick = {
 
                     if (email.isBlank() || senha.isBlank() || confirmarSenha.isBlank()) {
@@ -367,6 +378,7 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(4.dp))
 
+            // Se conta existe, volta para login
             TextButton(
                 onClick = {
                     navController.navigate("login") {
@@ -408,6 +420,7 @@ fun RegisterScreenPart2(
         fotoUri = uri
     }
 
+    // Carregar imagem (2 meios)
     val bitmap: ImageBitmap? = remember(fotoUri) {
         fotoUri?.let { uri ->
             try {
@@ -425,6 +438,7 @@ fun RegisterScreenPart2(
     }
 
     Scaffold {
+        // Layout RegisterScreenPart2
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.background)
@@ -432,6 +446,7 @@ fun RegisterScreenPart2(
                 .padding(top = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Foto de usuário
             Box(
                 modifier = Modifier
                     .size(150.dp)
@@ -524,6 +539,8 @@ fun RegisterScreenPart2(
 
             Spacer(Modifier.height(2.dp))
 
+            // Código de recuperação
+            // Funciona como uma segunda senha
             Text(
                 "* Necessário caso esqueça a senha",
                 color = Color(0xFF827E7D),
