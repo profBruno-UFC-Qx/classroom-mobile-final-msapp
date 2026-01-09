@@ -32,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -50,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.theme.colorTextSecondary
 import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
@@ -60,7 +58,8 @@ import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 @Composable
 fun PerfilScreen(
     navController: NavController = rememberNavController(),
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    cardViewModel: CardViewModel
 )
  {
     val user = userViewModel.userState
@@ -103,16 +102,7 @@ fun PerfilScreen(
                     titleContentColor = MaterialTheme.colorScheme.primary
                 ),
                 expandedHeight = 30.dp,
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .drawBehind {
-                        drawLine(
-                            color = colorText.copy(alpha = 0.4f),
-                            start = androidx.compose.ui.geometry.Offset(0f, size.height - 1f),
-                            end = androidx.compose.ui.geometry.Offset(size.width, size.height - 1f),
-                            strokeWidth = 8f
-                        )
-                    }
+                modifier = Modifier.background(MaterialTheme.colorScheme.background)
             )
         }
     ) {
@@ -208,6 +198,7 @@ fun PerfilScreen(
         visible = showConf,
         onDismiss = { showConf = false },
         userViewModel = userViewModel,
+        cardViewModel = cardViewModel
     )
 }
 
@@ -256,7 +247,7 @@ fun CardConf(
     visible: Boolean,
     onDismiss: () -> Unit,
     userViewModel: UserViewModel,
-    cardViewModel: CardViewModel = CardViewModel()
+    cardViewModel: CardViewModel
 ) {
 
     // Configurações de usuário
@@ -310,7 +301,7 @@ fun CardConf(
 
                 Text(
                     "Configurações",
-                    fontSize = 22.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -320,46 +311,51 @@ fun CardConf(
                 // CÓDIGO DE RECUPERAÇÃO
                 Text(
                     "Código de Recuperação",
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(Modifier.height(10.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .background(colorTextSecondary, RoundedCornerShape(12.dp))
-                        .padding(16.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        user.codeRescue,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onBackground
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.45f)
+                            .background(colorTextSecondary, RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            user.codeRescue,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    OutlinedTextField(
+                        value = newCode,
+                        onValueChange = { newCode = it },
+                        label = { Text("Novo código") },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedBorderColor = Color(0xFF827E7D),
+                            focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedLabelColor = Color(0xFF827E7D),
+                            cursorColor = Color(0xFF827E7D),
+                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedTextColor = Color(0xFF827E7D)
+                        )
                     )
                 }
-
-                Spacer(Modifier.height(14.dp))
-
-                OutlinedTextField(
-                    value = newCode,
-                    onValueChange = { newCode = it },
-                    label = { Text("Novo código") },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedBorderColor = Color(0xFF827E7D),
-                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedLabelColor = Color(0xFF827E7D),
-                        cursorColor = Color(0xFF827E7D),
-                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedTextColor = Color(0xFF827E7D)
-                    )
-                )
-
                 Spacer(Modifier.height(10.dp))
 
                 // Botão salvar novo código
@@ -411,7 +407,10 @@ fun CardConf(
 
                     Switch(
                         checked = isDarkMode,
-                        onCheckedChange = { userViewModel.toggleTheme() },
+                        onCheckedChange = {
+                            userViewModel.toggleTheme()
+                            onDismiss()
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -544,7 +543,7 @@ fun PerfilEdit(
                         modifier = Modifier.padding(start = 10.dp)
                     )
                 },
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                colors = TopAppBarDefaults.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          mediumTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.primary
                 ),

@@ -34,6 +34,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -46,25 +50,30 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.input.KeyboardType
+import com.marcos.myspentapp.ui.state.TypeGasto
 import com.marcos.myspentapp.ui.theme.colorLogo1
 import com.marcos.myspentapp.ui.theme.colorNegativo
 import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalheGasto(
     imageRes: Int,
     imageUri: Uri?,
     title: String,
+    tipo: TypeGasto,
     value: String,
     onFechar: () -> Unit,
-    onSalvar: (Uri?, String, String) -> Unit
+    onSalvar: (Uri?, String, String, TypeGasto) -> Unit
 ) {
     val context = LocalContext.current
 
     var currentImageUri by remember { mutableStateOf(imageUri) }
     var currentTitle by remember { mutableStateOf(title) }
     var currentValue by remember { mutableStateOf(value) }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedTipo by remember { mutableStateOf(tipo) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -74,7 +83,6 @@ fun DetalheGasto(
         }
     }
 
-    // Carregar imagem (id visual do gasto)
     val bitmap: ImageBitmap? = remember(currentImageUri) {
         currentImageUri?.let { uri ->
             try {
@@ -90,7 +98,6 @@ fun DetalheGasto(
         }
     }
 
-    // Dialog para gastos (add e editar)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -100,8 +107,7 @@ fun DetalheGasto(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Detalhes do Gasto",
                 fontSize = 22.sp,
@@ -131,8 +137,6 @@ fun DetalheGasto(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Informações do gasto (titulo e valor)
-            // Talvez eu ainda adicione tipo com enum (lazer, trabalho, alimentação, etc)
             OutlinedTextField(
                 value = currentTitle,
                 onValueChange = { currentTitle = it },
@@ -152,6 +156,52 @@ fun DetalheGasto(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ---- DROPDOWN COM VISUAL DE OUTLINEDTEXTFIELD ----
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedTipo.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Tipo do gasto") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF827E7D),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = Color(0xFF827E7D),
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = Color(0xFF827E7D),
+                        cursorColor = Color(0xFF827E7D)
+                    ),
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    TypeGasto.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.name) },
+                            onClick = {
+                                selectedTipo = option
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -177,7 +227,6 @@ fun DetalheGasto(
             )
         }
 
-        // Botões de ação
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -186,8 +235,7 @@ fun DetalheGasto(
         ) {
             OutlinedButton(
                 onClick = onFechar,
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     contentColor = MaterialTheme.colorScheme.onBackground
@@ -200,7 +248,8 @@ fun DetalheGasto(
 
             Button(
                 onClick = {
-                    onSalvar(currentImageUri, currentTitle, currentValue)
+                    onSalvar(currentImageUri, currentTitle, currentValue, selectedTipo)
+                    onFechar()
                 },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
@@ -213,6 +262,7 @@ fun DetalheGasto(
         }
     }
 }
+
 
 
 @Composable

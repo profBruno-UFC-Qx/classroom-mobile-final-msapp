@@ -7,6 +7,18 @@ data class CardUiState (
     val id: String = UUID.randomUUID().toString(),
     val imageUri: Uri?,
     val title: String,
-    val value: Double
+    val value: Double,
+    val type: TypeGasto = TypeGasto.NONE
 )
 
+enum class TypeGasto {
+    LAZER,
+    MORADIA,
+    EDUCACAO,
+    IMPREVISTOS,
+    ALIMENTACAO,
+    TRANSPORTE,
+    SAUDE,
+    OUTROS,
+    NONE
+}

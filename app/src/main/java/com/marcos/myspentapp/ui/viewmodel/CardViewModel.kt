@@ -30,6 +30,8 @@ class CardViewModel : ViewModel() {
 
     fun clear() {
         _cards.value = emptyList()
+        println("CLEAR EXECUTADO no VM: ${this.hashCode()}")
+
     }
 
     fun toggleSelection(id: String) {

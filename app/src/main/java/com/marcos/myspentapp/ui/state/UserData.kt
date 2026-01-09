@@ -12,3 +12,5 @@ data class UserData(
     val darkTheme: Boolean = false,
     val initApp: Boolean = false
 )
+
+

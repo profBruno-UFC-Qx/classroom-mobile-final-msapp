@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,15 +20,18 @@ import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.CashViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 
-// Inicializar ViewModels
-val userViewModel = UserViewModel()
-val cardViewModel = CardViewModel()
-val cashViewModel = CashViewModel()
+
+
 
 
 class MainActivity : ComponentActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+        private val cardViewModel: CardViewModel by viewModels()
+        private val cashViewModel: CashViewModel by viewModels()
+        private val userViewModel: UserViewModel by viewModels()
+
+
+        override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -132,7 +136,8 @@ fun AppNavigation(
                 showBottomBar = true
                 PerfilScreen(
                     navController = navController,
-                    userViewModel = userViewModel
+                    userViewModel = userViewModel,
+                    cardViewModel = cardViewModel
                 )
             }
 

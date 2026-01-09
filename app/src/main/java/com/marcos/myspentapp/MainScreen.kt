@@ -6,13 +6,6 @@ import android.content.res.Configuration
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandIn
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -59,7 +52,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,10 +76,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.marcos.myspentapp.ui.state.CardUiState
+import com.marcos.myspentapp.ui.state.TypeGasto
 import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,15 +93,7 @@ fun TopBar(cashViewModel: CashViewModel) {
 
     TopAppBar(
         expandedHeight = 30.dp,
-        modifier = Modifier
-            .drawBehind {
-                drawLine(
-                    color = colorText.copy(alpha = 0.4f),
-                    start = Offset(0f, size.height - 1f),
-                    end = Offset(size.width, size.height - 1f),
-                    strokeWidth = 8f
-                )
-            },
+        modifier = Modifier,
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = MaterialTheme.colorScheme.primary
@@ -347,7 +331,8 @@ fun MySpentApp(
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                key = { page -> cardViewModel.cards.value.hashCode() to page }
             ) { page ->
                 when (page) {
                     0 -> {
@@ -490,7 +475,6 @@ fun ListaDeGastos(
     var showDialog by remember { mutableStateOf(false) }
     val editingCard by cardViewModel.editingCard.collectAsState()
 
-
     // Layout Lista
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -522,7 +506,7 @@ fun ListaDeGastos(
             }
         }
     ) {
-        val gridState = rememberLazyGridState()
+
 
         Box(
             modifier = Modifier
@@ -539,6 +523,7 @@ fun ListaDeGastos(
                     style = MaterialTheme.typography.bodyLarge
                 )
             } else {
+                val gridState = rememberLazyGridState()
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(2),
@@ -632,58 +617,34 @@ fun ListaDeGastos(
     // Dialog para adicionar card
     if (showDialog) {
 
-        var contentVisible by remember { mutableStateOf(false) }
-
-        LaunchedEffect(Unit) { contentVisible = true }
-
-        Dialog(onDismissRequest = { contentVisible = false }) {
-            AnimatedVisibility(
-                visible = contentVisible,
-                enter = expandIn(
-                    expandFrom = Alignment.BottomEnd,
-                    animationSpec = tween(1800, easing = FastOutSlowInEasing)
-                ) + fadeIn(
-                    animationSpec = tween(1800),
-                    initialAlpha = 0.1f
-                ),
-                exit = fadeOut(tween(30)) + shrinkOut(
-                    shrinkTowards = Alignment.BottomEnd,
-                    animationSpec = tween(100, easing = FastOutSlowInEasing)
-                )
+        Dialog(onDismissRequest = { showDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .height(600.dp)
             ) {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .height(500.dp)
-                ) {
-                    DetalheGasto(
-                        imageRes = R.drawable.ms1,
-                        imageUri = null,
-                        title = "",
-                        value = "",
-                        onFechar = { contentVisible = false }
-                    ) { imageUri, title, value ->
+                DetalheGasto(
+                    imageRes = R.drawable.ms1,
+                    imageUri = null,
+                    title = "",
+                    value = "",
+                    tipo = TypeGasto.NONE,
+                    onFechar = { showDialog = false }
+                ) { imageUri, title, value, type ->
 
-                        cardViewModel.addCard(
-                            CardUiState(
-                                imageUri = imageUri,
-                                title = title,
-                                value = value.toDoubleOrNull() ?: 0.0
-                            )
+                    cardViewModel.addCard(
+                        CardUiState(
+                            imageUri = imageUri,
+                            title = title,
+                            value = value.toDoubleOrNull() ?: 0.0,
+                            type = type
                         )
+                    )
 
-                        contentVisible = false
-                    }
+                    showDialog = false
                 }
-            }
-        }
-
-        LaunchedEffect(contentVisible) {
-            if (!contentVisible) {
-                delay(300L)
-                showDialog = false
             }
         }
     }
@@ -696,22 +657,24 @@ fun ListaDeGastos(
                 elevation = CardDefaults.cardElevation(8.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(500.dp)
+                    .height(600.dp)
             ) {
                 DetalheGasto(
                     imageRes = R.drawable.ms1,
                     imageUri = editingCard!!.imageUri,
                     title = editingCard!!.title,
                     value = editingCard!!.value.toString(),
+                    tipo = editingCard!!.type,
                     onFechar = { cardViewModel.closeEdit() }
-                ) { newImage, newTitle, newValue ->
+                ) { newImage, newTitle, newValue, newType->
 
                     cardViewModel.updateCard(
                         id = editingCard!!.id,
                         updatedCard = editingCard!!.copy(
                             imageUri = newImage,
                             title = newTitle,
-                            value = newValue.toDoubleOrNull() ?: editingCard!!.value
+                            value = newValue.toDoubleOrNull() ?: editingCard!!.value,
+                            type = newType
                         )
                     )
 
