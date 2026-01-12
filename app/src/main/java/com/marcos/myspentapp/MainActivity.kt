@@ -20,10 +20,6 @@ import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.CashViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 
-
-
-
-
 class MainActivity : ComponentActivity() {
 
         private val cardViewModel: CardViewModel by viewModels()

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.marcos.myspentapp.ui.database.UserSaved
 import com.marcos.myspentapp.ui.theme.colorTextSecondary
 import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
@@ -63,14 +64,20 @@ fun PerfilScreen(
 )
  {
     val user = userViewModel.userState
-
     var showConf by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
+     val activeUser by userViewModel.usuario.collectAsState()
+
+     // Carrega o usuário quando a tela abrir
+     LaunchedEffect(Unit) {
+         userViewModel.loadUser(context, user.email)
+     }
+
     // FOTO DO PERFIL
-    val bitmap: ImageBitmap? = remember(user.fotoUri) {
-        user.fotoUri?.let { uri ->
+    val bitmap: ImageBitmap? = remember(activeUser?.fotoUri) {
+        activeUser?.fotoUri?.let { uri ->
             try {
                 if (Build.VERSION.SDK_INT < 28) {
                     MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
@@ -154,35 +161,44 @@ fun PerfilScreen(
 
                 // Informações de usuários
                 Column {
-                    Text(
-                        user.nome,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    activeUser?.name?.let { text ->
+                        Text(
+                            text,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                     Spacer(Modifier.height(6.dp))
-                    Text(user.email, fontSize = 16.sp, color = Color.Gray)
+
+                    activeUser?.email?.let { text ->
+                        Text(
+                            text,
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(30.dp))
 
             // OPÇÕES ---> talvez eu mude o design dessa parte
-            ProfileOptionItem(
+            OptionItem(
                 icon = Icons.Default.Person,
                 text = "Editar Informações",
                 color = MaterialTheme.colorScheme.onBackground,
                 onClick = { navController.navigate(Routes.EDIT_PROFILE) }
             )
 
-            ProfileOptionItem(
+            OptionItem(
                 icon = Icons.Default.Settings,
                 text = "Configurações",
                 color = MaterialTheme.colorScheme.onBackground,
                 onClick = { showConf = true }
             )
 
-            ProfileOptionItem(
+            OptionItem(
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
                 text = "Sair",
                 color = Color.Red,
@@ -203,7 +219,7 @@ fun PerfilScreen(
 }
 
 @Composable
-fun ProfileOptionItem(
+fun OptionItem(
     icon: ImageVector,
     text: String,
     color: Color = MaterialTheme.colorScheme.onBackground,
@@ -273,6 +289,9 @@ fun CardConf(
 
     var newCode by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -362,7 +381,19 @@ fun CardConf(
                 Button(
                     onClick = {
                         if (newCode.isNotBlank()) {
-                            userViewModel.updateCode(newCode)
+                            userViewModel.updateUserData(
+                                context,
+                                UserSaved(
+                                    user.email,
+                                    user.nome,
+                                    user.senha,
+                                    user.fotoUri,
+                                    newCode,
+                                    user.ganhos,
+                                    user.darkTheme,
+                                    user.initApp
+                                )
+                            )
                             newCode = ""
                             onDismiss()
                         }
@@ -463,8 +494,8 @@ fun CardConf(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        userViewModel.deleteUser()
-                        cardViewModel.clear()
+                        cardViewModel.clearCards(context, user.email)
+                        userViewModel.clearUser(context)
                         showDeleteDialog = false
                         onDismiss()
                     }
@@ -502,8 +533,6 @@ fun PerfilEdit(
     var email by remember { mutableStateOf(user.email) }
     var senha by remember { mutableStateOf(user.senha) }
     var fotoUri by remember { mutableStateOf(fotoUriAtual) }
-
-
 
     val context = LocalContext.current
 
@@ -681,6 +710,19 @@ fun PerfilEdit(
                         userViewModel.updateEmail(email)
                         userViewModel.updateSenha(senha)
                         userViewModel.updatePhoto(fotoUri)
+                        userViewModel.updateUserData(
+                            context,
+                            UserSaved(
+                                email,
+                                nome,
+                                senha,
+                                fotoUri,
+                                user.codeRescue,
+                                user.ganhos,
+                                user.darkTheme,
+                                user.initApp
+                            )
+                        )
                         navController.navigate(Routes.PROFILE)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

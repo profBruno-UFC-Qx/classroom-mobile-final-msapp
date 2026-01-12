@@ -4,14 +4,15 @@ Desenvolvimento de cerca de 60 a 80 por cento do app, implementação de telas d
 App não está responsivo/adaptativo ainda;
 Próximas etapas a polir e melhorar: MainSreen -> aparencia dos cards; referencias da moeda; [ X ]
                                     PerfilScreen -> aparencia de CardConf; [ X ]
-                                    Integração a dados persistentes; [ ]
+                                    Integração a dados persistentes; [ ] -- Parcialmente implementado
                                     Material Theme na tela de lançamento. [ X ]
                                     Comentários nas funções -> "Documentação" [ X ]
                                     Aperfeiçoar sistema de registro e login [ ]
                                     Implementação de enum class para tipo de gasto [ X ]
                                     Correção de ViewModels entre telas [ X ]
 ---
-
+OBS: Projeto não está finalizado. tive problemas com a IDE e a parte de integração a persistência; Não sei por que, mas entre uma execução e outra a DataUser e suas funções entrou em conflito, como se houvesse 2 no projeto.
+    Faltam poucas coisas para implementar com persistência e alguns extras na parte do gráfico (seções gráficas de cada tipo de gasto).
 ## Funcionalidades Principais -- Entrega 01
 
 - [ x ] Funcionalidade 1: [Cálculo orçamento - gastos de modo geral; o usuário informa seu orçamento e a cada gasto adicionado o tópico "gastos" incrementa]

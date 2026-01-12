@@ -52,6 +52,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,8 +61,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -75,9 +74,9 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.marcos.myspentapp.ui.database.CardData
 import com.marcos.myspentapp.ui.state.CardUiState
 import com.marcos.myspentapp.ui.state.TypeGasto
-import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
@@ -165,7 +164,7 @@ fun TopBar(cashViewModel: CashViewModel) {
                                 text = {
                                     Text(
                                         symbol,
-                                        fontSize = 16.sp,
+                                        fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
@@ -338,7 +337,8 @@ fun MySpentApp(
                     0 -> {
                         ListaDeGastos(
                             cardViewModel = cardViewModel,
-                            cashViewModel = cashViewModel
+                            cashViewModel = cashViewModel,
+                            userViewModel = userViewModel
                         )
                     }
 
@@ -468,12 +468,21 @@ fun CardGasto(
 @Composable
 fun ListaDeGastos(
     cardViewModel: CardViewModel,
-    cashViewModel: CashViewModel
+    cashViewModel: CashViewModel,
+    userViewModel: UserViewModel
 ) {
     val gastos by cardViewModel.cards.collectAsState()
     val selectedIds by cardViewModel.selectedIds.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     val editingCard by cardViewModel.editingCard.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        cardViewModel.loadCards(
+            context = context,
+            userId = userViewModel.userState.email
+        )
+    }
 
     // Layout Lista
     Scaffold(
@@ -481,7 +490,12 @@ fun ListaDeGastos(
         floatingActionButton = {
             if (selectedIds.isNotEmpty()) {
                 FloatingActionButton(
-                    onClick = { cardViewModel.removeSelected() },
+                    onClick = {
+                        cardViewModel.removeSelected(
+                            context = context,
+                            userEmail = userViewModel.userState.email
+                        )
+                    },
                     containerColor = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(50.dp)
                 ) {
@@ -635,15 +649,16 @@ fun ListaDeGastos(
                 ) { imageUri, title, value, type ->
 
                     cardViewModel.addCard(
-                        CardUiState(
-                            imageUri = imageUri,
+                        context = context,
+                        card = CardData(
+                            imageUri = imageUri.toString(),
                             title = title,
                             value = value.toDoubleOrNull() ?: 0.0,
-                            type = type
-                        )
+                            type = type.name,
+                            userEmail = userViewModel.userState.email,
+                        ),
+                        onResult = { showDialog = false }
                     )
-
-                    showDialog = false
                 }
             }
         }
@@ -668,17 +683,19 @@ fun ListaDeGastos(
                     onFechar = { cardViewModel.closeEdit() }
                 ) { newImage, newTitle, newValue, newType->
 
-                    cardViewModel.updateCard(
+                    cardViewModel.updateCardInBase(
+                        context = context,
+                        updatedCard = CardData(
                         id = editingCard!!.id,
-                        updatedCard = editingCard!!.copy(
-                            imageUri = newImage,
-                            title = newTitle,
-                            value = newValue.toDoubleOrNull() ?: editingCard!!.value,
-                            type = newType
-                        )
+                        userEmail = userViewModel.userState.email,
+                        imageUri = newImage.toString(),
+                        title = newTitle,
+                        value = newValue.toDoubleOrNull() ?: 0.0,
+                        type = newType.name,
+                        ),
+                        onResult = { cardViewModel.closeEdit() }
                     )
 
-                    cardViewModel.closeEdit()
                 }
             }
         }

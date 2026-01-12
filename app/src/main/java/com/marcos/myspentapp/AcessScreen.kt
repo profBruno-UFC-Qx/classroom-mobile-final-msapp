@@ -35,7 +35,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.marcos.myspentapp.ui.database.UserSaved
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
+
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,12 +46,14 @@ fun LoginScreen(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
+    val context = LocalContext.current
     val user = userViewModel.userState
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
 
-    Scaffold {
 
+
+    Scaffold {
         // Layout login
         Column(
             modifier = Modifier
@@ -137,12 +141,18 @@ fun LoginScreen(
             // de LoginScreen para MainScreen
             Button(
                 onClick = {
-                    if(user.email == email && user.senha == senha) {
-                        navController.navigate("main") {
-                            popUpTo("login") { inclusive = true }
+                    userViewModel.login(
+                        context = context,
+                        email = email,
+                        senha = senha
+                    ) { success ->
+                        if (success) {
+                            navController.navigate("main") {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        } else {
+                            itensChecked = true
                         }
-                    } else {
-                        itensChecked = true
                     }
                 },
                 modifier = Modifier
@@ -568,6 +578,21 @@ fun RegisterScreenPart2(
                     userViewModel.updatePhoto(fotoUri)
                     userViewModel.updateCode(codeRescue)
                     userViewModel.updateName(userName)
+
+                    // SALVAR USUÁRIO
+                    userViewModel.saveUserData(
+                        context,
+                        UserSaved(
+                            userViewModel.userState.email,
+                            userViewModel.userState.nome,
+                            userViewModel.userState.senha,
+                            userViewModel.userState.fotoUri,
+                            userViewModel.userState.codeRescue,
+                            userViewModel.userState.ganhos,
+                            userViewModel.userState.darkTheme,
+                            userViewModel.userState.initApp
+                        )
+                    )
                     navController.navigate("main")
                 },
                 modifier = Modifier

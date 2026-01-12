@@ -50,6 +50,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.input.KeyboardType
+import com.marcos.myspentapp.ui.database.UserSaved
 import com.marcos.myspentapp.ui.state.TypeGasto
 import com.marcos.myspentapp.ui.theme.colorLogo1
 import com.marcos.myspentapp.ui.theme.colorNegativo
@@ -272,7 +273,10 @@ fun DetalheInOut(
     onFechar: () -> Unit
 ) {
 
+    val context = LocalContext.current
     var currentIn by remember { mutableStateOf(cashIn) }
+    val userState = userViewModel.userState
+
 
     // Adicionar ganhos ao saldo
     Column(
@@ -342,6 +346,18 @@ fun DetalheInOut(
             Button(
                 onClick = {
                     userViewModel.updateGanhos(currentIn.toDoubleOrNull() ?: 0.00)
+                    userViewModel.updateUserData(
+                        context,
+                        UserSaved(
+                            userViewModel.userState.email,
+                            userViewModel.userState.nome,
+                            userViewModel.userState.senha,
+                            userViewModel.userState.fotoUri,
+                            userViewModel.userState.codeRescue,
+                            currentIn.toDoubleOrNull() ?: 0.00,
+                            userViewModel.userState.darkTheme,
+                            userViewModel.userState.initApp
+                        ))
                     onFechar()
                 },
                 modifier = Modifier.weight(1f),
