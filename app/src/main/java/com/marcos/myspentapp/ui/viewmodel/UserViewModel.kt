@@ -1,7 +1,6 @@
 package com.marcos.myspentapp.ui.viewmodel
 
 import android.content.Context
-import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,10 +23,6 @@ class UserViewModel : ViewModel() {
     var userState by mutableStateOf(UserData())
         private set
 
-    fun updateName(newName: String) {
-        userState = userState.copy(nome = newName)
-    }
-
     fun updateEmail(newEmail: String) {
         userState = userState.copy(email = newEmail)
     }
@@ -36,23 +31,16 @@ class UserViewModel : ViewModel() {
         userState = userState.copy(senha = newSenha)
     }
 
-    fun updateCode(newCode: String) {
-        userState = userState.copy(codeRescue = newCode)
-    }
-
-    fun updatePhoto(uri: Uri?) {
-        userState = userState.copy(fotoUri = uri)
-    }
-
     fun updateGanhos(newGanhos: Double) {
         userState = userState.copy(ganhos = newGanhos)
     }
 
-    fun toggleTheme() {
+    fun toggleTheme(): Boolean {
         userState = userState.copy(
             darkTheme = !userState.darkTheme,
             initApp = true
         )
+        return userState.darkTheme
     }
 
     fun setDarkTheme(enabled: Boolean) {
@@ -62,9 +50,6 @@ class UserViewModel : ViewModel() {
                 initApp = true
             )
         }
-    }
-    fun deleteUser() {
-        userState = UserData()
     }
 
     // Funções ROOM
@@ -91,6 +76,7 @@ class UserViewModel : ViewModel() {
             updateUser(context, user)
         }
     }
+
 
     // Funções DataStore
     fun login(context: Context, email: String, senha: String, onResult: (Boolean) -> Unit) {
@@ -121,7 +107,7 @@ class UserViewModel : ViewModel() {
     fun clearUser(context: Context) {
         viewModelScope.launch {
             val db = AppDatabase.getInstance(context)
-            db.userDao().clear()
+            db.userDao().clear(userState.email)
         }
     }
 

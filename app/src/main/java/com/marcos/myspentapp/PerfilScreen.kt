@@ -1,6 +1,7 @@
 package com.marcos.myspentapp
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -33,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -53,6 +53,7 @@ import com.marcos.myspentapp.ui.database.UserSaved
 import com.marcos.myspentapp.ui.theme.colorTextSecondary
 import com.marcos.myspentapp.ui.viewmodel.CardViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
+import androidx.core.net.toUri
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,34 +64,36 @@ fun PerfilScreen(
     cardViewModel: CardViewModel
 )
  {
-    val user = userViewModel.userState
     var showConf by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-
-     val activeUser by userViewModel.usuario.collectAsState()
+    val activeUser by userViewModel.usuario.collectAsState()
 
      // Carrega o usuário quando a tela abrir
      LaunchedEffect(Unit) {
-         userViewModel.loadUser(context, user.email)
+         userViewModel.loadUser(context, userViewModel.userState.email)
      }
 
     // FOTO DO PERFIL
-    val bitmap: ImageBitmap? = remember(activeUser?.fotoUri) {
-        activeUser?.fotoUri?.let { uri ->
-            try {
-                if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                        .asImageBitmap()
-                } else {
-                    val source = ImageDecoder.createSource(context.contentResolver, uri)
-                    ImageDecoder.decodeBitmap(source).asImageBitmap()
-                }
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
+     val fotoUri = activeUser?.fotoUri?.toUri()
+
+     val bitmap = remember(fotoUri) {
+         fotoUri?.let { uri ->
+             try {
+                 if (Build.VERSION.SDK_INT < 28) {
+                     MediaStore.Images.Media.getBitmap(
+                         context.contentResolver,
+                         uri
+                     ).asImageBitmap()
+                 } else {
+                     val source = ImageDecoder.createSource(context.contentResolver, uri)
+                     ImageDecoder.decodeBitmap(source).asImageBitmap()
+                 }
+             } catch (e: Exception) {
+                 null
+             }
+         }
+     }
 
     Scaffold(
         // TopBar
@@ -263,7 +266,8 @@ fun CardConf(
     visible: Boolean,
     onDismiss: () -> Unit,
     userViewModel: UserViewModel,
-    cardViewModel: CardViewModel
+    cardViewModel: CardViewModel,
+    navController: NavController = rememberNavController()
 ) {
 
     // Configurações de usuário
@@ -387,7 +391,7 @@ fun CardConf(
                                     user.email,
                                     user.nome,
                                     user.senha,
-                                    user.fotoUri,
+                                    user.fotoUri.toString(),
                                     newCode,
                                     user.ganhos,
                                     user.darkTheme,
@@ -439,7 +443,20 @@ fun CardConf(
                     Switch(
                         checked = isDarkMode,
                         onCheckedChange = {
-                            userViewModel.toggleTheme()
+                            val changeMode = userViewModel.toggleTheme()
+                            userViewModel.updateUserData(
+                                context,
+                                UserSaved(
+                                    user.email,
+                                    user.nome,
+                                    user.senha,
+                                    user.fotoUri.toString(),
+                                    user.codeRescue,
+                                    user.ganhos,
+                                    changeMode,
+                                    user.initApp
+                                )
+                            )
                             onDismiss()
                         },
                         colors = SwitchDefaults.colors(
@@ -451,7 +468,7 @@ fun CardConf(
                     )
                 }
 
-                Spacer(Modifier.height(30.dp))
+                Spacer(Modifier.height(90.dp))
 
                 // EXCLUIR USUÁRIO
                 Button(
@@ -496,6 +513,7 @@ fun CardConf(
                     onClick = {
                         cardViewModel.clearCards(context, user.email)
                         userViewModel.clearUser(context)
+                        navController.navigate(Routes.LOGIN)
                         showDeleteDialog = false
                         onDismiss()
                     }
@@ -522,39 +540,49 @@ fun CardConf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilEdit(
-    fotoUriAtual: Uri? = null,
     userViewModel: UserViewModel,
     onFechar: () -> Unit = {},
     navController: NavController
 ) {
     val user = userViewModel.userState
+    val activeUser by userViewModel.usuario.collectAsState()
+
 
     var nome by remember { mutableStateOf(user.nome) }
-    var email by remember { mutableStateOf(user.email) }
+    var email by remember { mutableStateOf(activeUser?.email ?: "") }
+
     var senha by remember { mutableStateOf(user.senha) }
-    var fotoUri by remember { mutableStateOf(fotoUriAtual) }
+    var fotoUri by remember { mutableStateOf(activeUser?.fotoUri) }
 
     val context = LocalContext.current
 
     // Abrir galeria
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        fotoUri = uri
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            fotoUri = it.toString()
+        }
     }
 
+
     // COPIA E COLA -> (CardGasto/DetalheGasto)
-    val bitmap: ImageBitmap? = remember(user.fotoUri) {
-        fotoUri?.let { uri ->
+    val fotoAtual = fotoUri?.toUri()
+
+    val bitmap = remember(fotoAtual) {
+        fotoAtual?.let { uri ->
             try {
                 if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                        .asImageBitmap()
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri).asImageBitmap()
                 } else {
                     val source = ImageDecoder.createSource(context.contentResolver, uri)
                     ImageDecoder.decodeBitmap(source).asImageBitmap()
                 }
-            } catch (_: Exception) {
+            } catch(e: Exception) {
                 null
             }
         }
@@ -597,7 +625,7 @@ fun PerfilEdit(
                     .size(140.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFE0E0E0))
-                    .clickable { launcher.launch("image/*") },
+                    .clickable { launcher.launch(arrayOf("image/*")) },
                 contentAlignment = Alignment.Center
             ) {
                 if (bitmap != null) {
@@ -706,14 +734,10 @@ fun PerfilEdit(
 
                 Button(
                     onClick = {
-                        userViewModel.updateName(nome)
-                        userViewModel.updateEmail(email)
-                        userViewModel.updateSenha(senha)
-                        userViewModel.updatePhoto(fotoUri)
                         userViewModel.updateUserData(
                             context,
                             UserSaved(
-                                email,
+                                activeUser?.email ?: "",
                                 nome,
                                 senha,
                                 fotoUri,

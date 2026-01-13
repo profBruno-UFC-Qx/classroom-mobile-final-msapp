@@ -4,7 +4,7 @@ Desenvolvimento de cerca de 60 a 80 por cento do app, implementação de telas d
 App não está responsivo/adaptativo ainda;
 Próximas etapas a polir e melhorar: MainSreen -> aparencia dos cards; referencias da moeda; [ X ]
                                     PerfilScreen -> aparencia de CardConf; [ X ]
-                                    Integração a dados persistentes; [ ] -- Parcialmente implementado
+                                    Integração a dados persistentes; [ x ] -- Parcialmente implementado
                                     Material Theme na tela de lançamento. [ X ]
                                     Comentários nas funções -> "Documentação" [ X ]
                                     Aperfeiçoar sistema de registro e login [ ]
@@ -38,6 +38,16 @@ OBS: Projeto não está finalizado. tive problemas com a IDE e a parte de integr
  ps: Acredito ser isso o pedido, senão, nas próximas atualizações será consertado;
  Ao final colocarei as referencias do material usado.
 ---
+
+## Fontes e materiais de apoio
+-- https://youtube.com/playlist?list=PLQkwcJG4YTCSpJ2NLhDTHhi6XBNfk9WiC&si=NZHTHPI3Gbu075oK
+-- https://youtube.com/playlist?list=PLSrm9z4zp4mEWwyiuYgVMWcDFdsebhM-r&si=_Nf9C6NVJLy2WDNc
+-- https://youtu.be/WKz8SpPxZKk?si=pld288ydDlyisiNy
+-- https://youtu.be/J-d96V9n8Po?si=X3VwqDepOxCM9mzu
+-- https://youtu.be/4gUeyNkGE3g?si=3uK2D0CTbOVubiDj
+-- https://m3.material.io/develop/android/jetpack-compos
+--  
+
 
 ## Instruções para Execução
 [ Execução padrão ]

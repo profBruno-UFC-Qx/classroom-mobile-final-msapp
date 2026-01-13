@@ -1,6 +1,7 @@
 package com.marcos.myspentapp
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.marcos.myspentapp.ui.database.UserSaved
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
+import androidx.core.net.toUri
 
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -47,9 +49,10 @@ fun LoginScreen(
     userViewModel: UserViewModel
 ) {
     val context = LocalContext.current
-    val user = userViewModel.userState
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
+    val user by userViewModel.usuario.collectAsState()
+
 
 
 
@@ -153,6 +156,21 @@ fun LoginScreen(
                         } else {
                             itensChecked = true
                         }
+                    }
+                    if(user?.initApp == false) {
+                        userViewModel.updateUserData(
+                            context,
+                            UserSaved(
+                                user?.email ?: "",
+                                user?.name ?: "",
+                                user?.senha ?: "",
+                                user?.fotoUri,
+                                user?.codeRescue ?: "",
+                                user?.ganhos ?: 0.00,
+                                user?.darkTheme ?: false,
+                                true
+                            )
+                        )
                     }
                 },
                 modifier = Modifier
@@ -406,13 +424,13 @@ fun RegisterScreen(
     }
 }
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UseKtx")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreenPart2(
     navController: NavController,
     userViewModel: UserViewModel,
-    fotoUri: Uri? = null
+    fotoUri: String? = null
 ) {
 
     var fotoUri by remember { mutableStateOf(fotoUri) }
@@ -425,18 +443,25 @@ fun RegisterScreenPart2(
 
     // Launcher para abrir galeria
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        fotoUri = uri
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            fotoUri = it.toString()
+        }
     }
+
 
     // Carregar imagem (2 meios)
     val bitmap: ImageBitmap? = remember(fotoUri) {
-        fotoUri?.let { uri ->
+        fotoUri?.let { uriString ->
             try {
+                val uri = uriString.toUri()
                 if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                        .asImageBitmap()
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri).asImageBitmap()
                 } else {
                     val source = ImageDecoder.createSource(context.contentResolver, uri)
                     ImageDecoder.decodeBitmap(source).asImageBitmap()
@@ -462,7 +487,7 @@ fun RegisterScreenPart2(
                     .size(150.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFE0E0E0))
-                    .clickable { launcher.launch("image/*") },
+                    .clickable { launcher.launch(arrayOf("image/*")) },
                 contentAlignment = Alignment.Center
             ) {
                 if (bitmap != null) {
@@ -575,20 +600,16 @@ fun RegisterScreenPart2(
                     }
 
                     // CRIA A CONTA
-                    userViewModel.updatePhoto(fotoUri)
-                    userViewModel.updateCode(codeRescue)
-                    userViewModel.updateName(userName)
-
                     // SALVAR USUÁRIO
                     userViewModel.saveUserData(
                         context,
                         UserSaved(
                             userViewModel.userState.email,
-                            userViewModel.userState.nome,
+                            userName,
                             userViewModel.userState.senha,
-                            userViewModel.userState.fotoUri,
-                            userViewModel.userState.codeRescue,
-                            userViewModel.userState.ganhos,
+                            fotoUri,
+                            codeRescue,
+                            0.00,
                             userViewModel.userState.darkTheme,
                             userViewModel.userState.initApp
                         )

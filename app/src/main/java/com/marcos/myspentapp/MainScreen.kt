@@ -2,6 +2,7 @@ package com.marcos.myspentapp
 
 import com.marcos.myspentapp.ui.viewmodel.CashViewModel
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.ImageDecoder
 import android.os.Build
@@ -191,12 +192,25 @@ fun MySpentApp(
     cardViewModel: CardViewModel,
     userViewModel: UserViewModel
 ) {
+    val context = LocalContext.current
+
+    val emailAtivo = userViewModel.userState.email
+
+    LaunchedEffect(emailAtivo) {
+        if (emailAtivo.isNotBlank()) {
+            userViewModel.loadUser(context, emailAtivo)
+            cardViewModel.loadCards(context, emailAtivo)
+        }
+    }
+
+    // Coleta da lista de cards
     val cards by cardViewModel.cards.collectAsState()
+    val activeUser by userViewModel.usuario.collectAsState()
 
     var showDialogCash by remember { mutableStateOf(false) }
 
     // valor original em BRL
-    val ganhosOriginal = userViewModel.userState.ganhos
+    val ganhosOriginal: Double = activeUser?.ganhos ?: 0.00
 
     // soma dos gastos em BRL
     val totalGastosOriginal = cards.sumOf { it.value }
@@ -338,7 +352,8 @@ fun MySpentApp(
                         ListaDeGastos(
                             cardViewModel = cardViewModel,
                             cashViewModel = cashViewModel,
-                            userViewModel = userViewModel
+                            userViewModel = userViewModel,
+                            context = context
                         )
                     }
 
@@ -469,20 +484,13 @@ fun CardGasto(
 fun ListaDeGastos(
     cardViewModel: CardViewModel,
     cashViewModel: CashViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    context: Context
 ) {
     val gastos by cardViewModel.cards.collectAsState()
     val selectedIds by cardViewModel.selectedIds.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     val editingCard by cardViewModel.editingCard.collectAsState()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        cardViewModel.loadCards(
-            context = context,
-            userId = userViewModel.userState.email
-        )
-    }
 
     // Layout Lista
     Scaffold(

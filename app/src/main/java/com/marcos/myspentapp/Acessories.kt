@@ -1,5 +1,6 @@
 package com.marcos.myspentapp
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -76,13 +77,19 @@ fun DetalheGasto(
     var expanded by remember { mutableStateOf(false) }
     var selectedTipo by remember { mutableStateOf(tipo) }
 
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+
+    val launch = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
     ) { uriSelecionada: Uri? ->
-        if (uriSelecionada != null) {
+        uriSelecionada?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
             currentImageUri = uriSelecionada
         }
     }
+
 
     val bitmap: ImageBitmap? = remember(currentImageUri) {
         currentImageUri?.let { uri ->
@@ -124,7 +131,7 @@ fun DetalheGasto(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(180.dp)
-                        .clickable { imagePicker.launch("image/*") }
+                        .clickable { launch.launch(arrayOf("image/*")) }
                 )
             } else {
                 Image(
@@ -132,7 +139,7 @@ fun DetalheGasto(
                     contentDescription = "Selecionar imagem",
                     modifier = Modifier
                         .size(180.dp)
-                        .clickable { imagePicker.launch("image/*") }
+                        .clickable { launch.launch(arrayOf("image/*")) }
                 )
             }
 
@@ -275,8 +282,6 @@ fun DetalheInOut(
 
     val context = LocalContext.current
     var currentIn by remember { mutableStateOf(cashIn) }
-    val userState = userViewModel.userState
-
 
     // Adicionar ganhos ao saldo
     Column(
@@ -352,7 +357,7 @@ fun DetalheInOut(
                             userViewModel.userState.email,
                             userViewModel.userState.nome,
                             userViewModel.userState.senha,
-                            userViewModel.userState.fotoUri,
+                            userViewModel.userState.fotoUri.toString(),
                             userViewModel.userState.codeRescue,
                             currentIn.toDoubleOrNull() ?: 0.00,
                             userViewModel.userState.darkTheme,

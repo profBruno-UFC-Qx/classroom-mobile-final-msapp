@@ -1,13 +1,10 @@
 package com.marcos.myspentapp.ui.database
 
 import android.content.Context
-import android.net.Uri
 import androidx.room.*
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 // TABELA
 @Entity(tableName = "users")
@@ -15,7 +12,7 @@ data class UserSaved(
     @PrimaryKey val email: String,
     val name: String?,
     val senha: String?,
-    val fotoUri: Uri?,
+    val fotoUri: String?,
     val codeRescue: String,
     val ganhos: Double,
     val darkTheme: Boolean,
@@ -34,8 +31,8 @@ interface UserDao{
     @Update
     suspend fun updateUser(user: UserSaved)
 
-    @Query("DELETE FROM users")
-    suspend fun clear()
+    @Query("DELETE FROM users WHERE email = :email")
+    suspend fun clear(email: String)
 }
 
 // DATASTORE — CONFIGURAÇÃO
@@ -69,11 +66,4 @@ suspend fun getUser(context: Context, email: String): UserSaved? {
 suspend fun updateUser(context: Context, user: UserSaved) {
     val db = AppDatabase.getInstance(context)
     db.userDao().updateUser(user)
-}
-
-
-suspend fun logout(context: Context) {
-    val db = AppDatabase.getInstance(context)
-    db.userDao().clear()
-    setLogado(context, false)
 }
