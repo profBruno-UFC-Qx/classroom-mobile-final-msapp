@@ -30,6 +30,9 @@ class UserViewModel : ViewModel() {
     fun updateSenha(newSenha: String) {
         userState = userState.copy(senha = newSenha)
     }
+    fun updateCode(newCode: String) {
+        userState = userState.copy(codeRescue = newCode)
+    }
 
     fun updateGanhos(newGanhos: Double) {
         userState = userState.copy(ganhos = newGanhos)

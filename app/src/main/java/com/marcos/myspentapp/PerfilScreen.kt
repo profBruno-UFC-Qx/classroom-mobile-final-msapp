@@ -385,6 +385,7 @@ fun CardConf(
                 Button(
                     onClick = {
                         if (newCode.isNotBlank()) {
+                            userViewModel.updateCode(newCode)
                             userViewModel.updateUserData(
                                 context,
                                 UserSaved(
@@ -515,7 +516,6 @@ fun CardConf(
                         userViewModel.clearUser(context)
                         navController.navigate(Routes.LOGIN)
                         showDeleteDialog = false
-                        onDismiss()
                     }
                 ) {
                     Text(

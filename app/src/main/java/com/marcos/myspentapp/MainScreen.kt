@@ -56,6 +56,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -205,12 +206,12 @@ fun MySpentApp(
 
     // Coleta da lista de cards
     val cards by cardViewModel.cards.collectAsState()
-    val activeUser by userViewModel.usuario.collectAsState()
 
     var showDialogCash by remember { mutableStateOf(false) }
 
     // valor original em BRL
-    val ganhosOriginal: Double = activeUser?.ganhos ?: 0.00
+    val ganhosOriginal by remember { mutableDoubleStateOf(userViewModel.userState.ganhos) }
+
 
     // soma dos gastos em BRL
     val totalGastosOriginal = cards.sumOf { it.value }

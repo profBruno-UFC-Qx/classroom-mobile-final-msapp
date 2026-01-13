@@ -350,7 +350,6 @@ fun DetalheInOut(
 
             Button(
                 onClick = {
-                    userViewModel.updateGanhos(currentIn.toDoubleOrNull() ?: 0.00)
                     userViewModel.updateUserData(
                         context,
                         UserSaved(
@@ -363,6 +362,7 @@ fun DetalheInOut(
                             userViewModel.userState.darkTheme,
                             userViewModel.userState.initApp
                         ))
+                    userViewModel.updateGanhos(currentIn.toDoubleOrNull() ?: 0.00)
                     onFechar()
                 },
                 modifier = Modifier.weight(1f),
