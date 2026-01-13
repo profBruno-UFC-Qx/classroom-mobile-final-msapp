@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.marcos.myspentapp-mergeDebugResources-2:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Marcos\\app\\.gradle\\caches\\9.2.0\\transforms\\c546bd63c23d4c586a294384c8bee408\\workspace\\transformed\\appcompat-1.7.0\\res\\values-port\\values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+R_DEF: Internal format may change without notice
+local
+color colorFundo
+color colorFundoDark
+color colorPrimary
+color colorPrimaryDark
+color splash_icon_tint
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+drawable ms1
+drawable myspent
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+style Theme.MySpentApp
+style Theme.MySpentApp.Splash
+xml backup_rules
+xml data_extraction_rules

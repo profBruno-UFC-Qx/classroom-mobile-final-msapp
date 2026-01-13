@@ -1,0 +1,26 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.marcos.myspentapp-mergeDebugResources-2:/values-fil/values-fil.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Marcos\\app\\.gradle\\caches\\9.2.0\\transforms\\c350475fcb968d76bb1f48097d48bd47\\workspace\\transformed\\play-services-wallet-19.5.0\\res\\values-fil\\values.xml",
+                    "from": {
+                        "startLines": "4,5,6",
+                        "startColumns": "0,0,0",
+                        "startOffsets": "203,271,328",
+                        "endColumns": "67,56,78",
+                        "endOffsets": "270,327,406"
+                    },
+                    "to": {
+                        "startLines": "2,3,4",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,127,188",
+                        "endColumns": "71,60,82",
+                        "endOffsets": "122,183,266"
+                    }
+                }
+            ]
+        }
+    ]
+}
