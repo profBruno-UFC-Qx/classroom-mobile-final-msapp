@@ -1,43 +1,46 @@
 package com.marcos.myspentapp.ui.viewmodel
 
 import android.content.Context
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.marcos.myspentapp.ui.database.AppDatabase
-import com.marcos.myspentapp.ui.state.UserData
+import com.marcos.myspentapp.data.database.AppDatabase
+import com.marcos.myspentapp.ui.state.UserUiState
 import kotlinx.coroutines.launch
-import com.marcos.myspentapp.ui.database.setLogado
-import com.marcos.myspentapp.ui.database.saveUser
-import com.marcos.myspentapp.ui.database.UserSaved
-import com.marcos.myspentapp.ui.database.getUser
-import com.marcos.myspentapp.ui.database.updateUser
+import com.marcos.myspentapp.data.repository.UserRepository
+import com.marcos.myspentapp.data.models.Users
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 
+class UserViewModel(
+    private val repository: UserRepository
+) : ViewModel() {
 
-class UserViewModel : ViewModel() {
-
-    var userState by mutableStateOf(UserData())
+    var userState by mutableStateOf(UserUiState())
         private set
 
+    // UI STATE Functions
+    fun updateNome(newNome: String) {
+        userState = userState.copy(nome = newNome)
+    }
     fun updateEmail(newEmail: String) {
         userState = userState.copy(email = newEmail)
     }
-
     fun updateSenha(newSenha: String) {
         userState = userState.copy(senha = newSenha)
     }
     fun updateCode(newCode: String) {
         userState = userState.copy(codeRescue = newCode)
     }
-
     fun updateGanhos(newGanhos: Double) {
         userState = userState.copy(ganhos = newGanhos)
     }
-
     fun toggleTheme(): Boolean {
         userState = userState.copy(
             darkTheme = !userState.darkTheme,
@@ -55,41 +58,60 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    // Funções ROOM
-    private val _usuario = MutableStateFlow<UserSaved?>(null)
+
+    // ROOM Functions
+    private val _usuario = MutableStateFlow<Users?>(null)
     val usuario = _usuario.asStateFlow()
-    fun loadUser(
-        context: Context,
-        email: String,
+
+    fun loadUser(email: String) {
+        viewModelScope.launch {
+            repository.getUser(email).collect { user ->
+                _usuario.value = user
+            }
+        }
+    }
+
+    fun saveUser(user: Users) {
+        viewModelScope.launch {
+            repository.saveUser(user)
+        }
+    }
+
+    fun updateUser(
+        emailAtual: String,
+        novoEmail: String,
+        novoNome: String?,
+        novaSenha: String?,
+        novaFotoUri: String?,
+        novoCodeRescue: String,
+        novoGanhos: Double,
+        novoDarkTheme: Boolean,
+        novoInitApp: Boolean
     ) {
         viewModelScope.launch {
-            val userAtivo = getUser(context, email)
-            _usuario.value = userAtivo
+            repository.updateUser(
+                emailAtual,
+                novoEmail,
+                novoNome,
+                novaSenha,
+                novaFotoUri,
+                novoCodeRescue,
+                novoGanhos,
+                novoDarkTheme,
+                novoInitApp
+            )
+            loadUser(novoEmail)
         }
     }
 
-    fun saveUserData(context: Context, user: UserSaved) {
+    // LOGIN
+    fun login(email: String, senha: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            saveUser(context, user)
-        }
-    }
+            val user = repository.getUser(email).first()
 
-    fun updateUserData(context: Context, user: UserSaved) {
-        viewModelScope.launch {
-            updateUser(context, user)
-        }
-    }
-
-
-    // Funções DataStore
-    fun login(context: Context, email: String, senha: String, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val db = AppDatabase.getInstance(context)
-            val user = db.userDao().getUserByEmail(email)
-
-            if (user != null && user.senha == senha) {
+            if (user?.senha == senha) {
                 userState = userState.copy(
-                    nome = user.name ?: "",
+                    nome = user.name.orEmpty(),
                     email = user.email,
                     senha = user.senha,
                     fotoUri = user.fotoUri,
@@ -98,8 +120,6 @@ class UserViewModel : ViewModel() {
                     darkTheme = user.darkTheme,
                     initApp = user.initApp
                 )
-
-                setLogado(context, true)
                 onResult(true)
             } else {
                 onResult(false)
@@ -107,12 +127,19 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    fun clearUser(context: Context) {
+    fun deleteUser() {
         viewModelScope.launch {
-            val db = AppDatabase.getInstance(context)
-            db.userDao().clear(userState.email)
+            repository.clear(userState.email)
         }
     }
+}
 
-
+@Suppress("UNCHECKED_CAST")
+class UserViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val db = AppDatabase.getInstance(context)
+        val dao = db.userDao()
+        val repo = UserRepository(dao)
+        return UserViewModel(repo) as T
+    }
 }

@@ -3,7 +3,7 @@ package com.marcos.myspentapp.ui.viewmodel
 import android.annotation.SuppressLint
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.marcos.myspentapp.ui.cash_api.RetrofitInstance
+import com.marcos.myspentapp.cash_api.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch

@@ -1,6 +1,6 @@
 package com.marcos.myspentapp.ui.state
 
-data class UserData(
+data class UserUiState(
     val nome: String = "Usuário",
     val email: String = "",
     val senha: String = "",

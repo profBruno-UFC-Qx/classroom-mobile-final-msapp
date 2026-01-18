@@ -1,43 +1,22 @@
-package com.marcos.myspentapp.ui.database
+package com.marcos.myspentapp.data.database
 
 import android.content.Context
-import android.net.Uri
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverter
-import androidx.room.TypeConverters
-import com.marcos.myspentapp.ui.state.TypeGasto
-
-// CONVERSOR
-class Converters {
-
-    @TypeConverter
-    fun fromUri(uri: Uri?): String? = uri?.toString()
-
-    @TypeConverter
-    fun toUri(uriString: String?): Uri? =
-        uriString?.let { Uri.parse(it) }
-
-    // Enum <-> String para tipo de gasto
-    @TypeConverter
-    fun fromType(type: TypeGasto): String = type.name
-
-    @TypeConverter
-    fun toType(name: String): TypeGasto =
-        TypeGasto.valueOf(name)
-}
+import com.marcos.myspentapp.data.dao.GastoDao
+import com.marcos.myspentapp.data.dao.UserDao
+import com.marcos.myspentapp.data.models.Gastos
+import com.marcos.myspentapp.data.models.Users
 
 @Database(
-    entities = [UserSaved::class, CardData::class],
+    entities = [Users::class, Gastos::class],
     version = 2,
     exportSchema = false
 )
-@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun userDao(): UserDao
-    abstract fun cardDao(): CardDao
+    abstract fun gastoDao(): GastoDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

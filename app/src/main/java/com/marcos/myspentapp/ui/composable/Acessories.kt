@@ -1,4 +1,4 @@
-package com.marcos.myspentapp
+package com.marcos.myspentapp.ui.composable
 
 import android.content.Intent
 import android.net.Uri
@@ -25,9 +25,7 @@ import androidx.compose.ui.unit.sp
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -49,14 +47,13 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import com.marcos.myspentapp.ui.database.UserSaved
-import com.marcos.myspentapp.ui.state.TypeGasto
-import com.marcos.myspentapp.ui.theme.colorLogo1
-import com.marcos.myspentapp.ui.theme.colorNegativo
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.marcos.myspentapp.data.models.TypeGasto
 import com.marcos.myspentapp.ui.theme.colorText
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
+import com.marcos.myspentapp.ui.viewmodel.UserViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +61,7 @@ fun DetalheGasto(
     imageRes: Int,
     imageUri: Uri?,
     title: String,
-    tipo: TypeGasto,
+    tipo: String,
     value: String,
     onFechar: () -> Unit,
     onSalvar: (Uri?, String, String, TypeGasto) -> Unit
@@ -151,7 +148,7 @@ fun DetalheGasto(
                 label = { Text("Título do gasto") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Next,
+                    imeAction = ImeAction.Next,
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF827E7D),
@@ -173,7 +170,7 @@ fun DetalheGasto(
                 onExpandedChange = { expanded = !expanded }
             ) {
                 OutlinedTextField(
-                    value = selectedTipo.name,
+                    value = selectedTipo,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Tipo do gasto") },
@@ -202,7 +199,7 @@ fun DetalheGasto(
                         DropdownMenuItem(
                             text = { Text(option.name) },
                             onClick = {
-                                selectedTipo = option
+                                selectedTipo = option.name
                                 expanded = false
                             }
                         )
@@ -219,7 +216,7 @@ fun DetalheGasto(
                 label = { Text("Valor em R$") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+                    imeAction = ImeAction.Done,
                     keyboardType = KeyboardType.Decimal
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -256,7 +253,7 @@ fun DetalheGasto(
 
             Button(
                 onClick = {
-                    onSalvar(currentImageUri, currentTitle, currentValue, selectedTipo)
+                    onSalvar(currentImageUri, currentTitle, currentValue, TypeGasto.valueOf(selectedTipo))
                     onFechar()
                 },
                 modifier = Modifier.weight(1f),
@@ -271,8 +268,6 @@ fun DetalheGasto(
     }
 }
 
-
-
 @Composable
 fun DetalheInOut(
     cashIn: String,
@@ -280,7 +275,6 @@ fun DetalheInOut(
     onFechar: () -> Unit
 ) {
 
-    val context = LocalContext.current
     var currentIn by remember { mutableStateOf(cashIn) }
 
     // Adicionar ganhos ao saldo
@@ -309,7 +303,7 @@ fun DetalheInOut(
                 label = { Text("Entrada em R$") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Next,
+                    imeAction = ImeAction.Next,
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF827E7D),
@@ -350,19 +344,18 @@ fun DetalheInOut(
 
             Button(
                 onClick = {
-                    userViewModel.updateUserData(
-                        context,
-                        UserSaved(
-                            userViewModel.userState.email,
-                            userViewModel.userState.nome,
-                            userViewModel.userState.senha,
-                            userViewModel.userState.fotoUri.toString(),
-                            userViewModel.userState.codeRescue,
-                            currentIn.toDoubleOrNull() ?: 0.00,
-                            userViewModel.userState.darkTheme,
-                            userViewModel.userState.initApp
-                        ))
                     userViewModel.updateGanhos(currentIn.toDoubleOrNull() ?: 0.00)
+                    userViewModel.updateUser(
+                        userViewModel.userState.email,
+                        userViewModel.userState.email,
+                        userViewModel.userState.nome,
+                        userViewModel.userState.senha,
+                        userViewModel.userState.fotoUri.toString(),
+                        userViewModel.userState.codeRescue,
+                        currentIn.toDoubleOrNull() ?: 0.00,
+                        userViewModel.userState.darkTheme,
+                        userViewModel.userState.initApp
+                        )
                     onFechar()
                 },
                 modifier = Modifier.weight(1f),
@@ -445,90 +438,3 @@ fun BottomBar(
     }
 }
 
-@Composable
-fun SectorBalanco(
-    ganhos: Double,
-    gastos: Double,
-    modifier: Modifier = Modifier
-) {
-    val total = ganhos + gastos
-    if (total <= 0) return
-
-    val ganhoSweep = (ganhos / total * 360f).toFloat()
-    val gastoSweep = (gastos / total * 360f).toFloat()
-
-    val strokeWidth = 60.dp
-
-    // Gráfico ganhos/gastos
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(top = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            "Balanço Financeiro",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // Design do gráfico
-        Canvas(
-            modifier = Modifier.size(280.dp)
-        ) {
-            val strokePx = strokeWidth.toPx()
-            val radiusOffset = strokePx / 2
-
-            val arcSize = size.minDimension - strokePx
-            val topLeft = Offset(radiusOffset, radiusOffset)
-
-            var startAngle = -90f
-
-            drawArc(
-                color = colorLogo1,
-                startAngle = startAngle,
-                sweepAngle = ganhoSweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = androidx.compose.ui.geometry.Size(arcSize, arcSize),
-                style = Stroke(width = strokePx)
-            )
-
-            startAngle += ganhoSweep
-
-            drawArc(
-                color = colorNegativo,
-                startAngle = startAngle,
-                sweepAngle = gastoSweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = androidx.compose.ui.geometry.Size(arcSize, arcSize),
-                style = Stroke(width = strokePx)
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // LEGENDA
-        Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
-            LegendItem(colorLogo1, "Ganhos")
-            LegendItem(colorNegativo, "Gastos")
-        }
-    }
-}
-
-
-@Composable
-fun LegendItem(color: Color, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(14.dp)
-                .background(color, CircleShape)
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(text, fontSize = 14.sp)
-    }
-}

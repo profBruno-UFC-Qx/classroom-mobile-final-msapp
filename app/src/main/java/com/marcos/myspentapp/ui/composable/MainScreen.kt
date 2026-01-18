@@ -1,12 +1,11 @@
-package com.marcos.myspentapp
+package com.marcos.myspentapp.ui.composable
 
 import com.marcos.myspentapp.ui.viewmodel.CashViewModel
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.res.Configuration
 import android.graphics.ImageDecoder
 import android.os.Build
-import android.provider.MediaStore
+import android.provider.MediaStore.Images.Media.getBitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +30,9 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -45,12 +46,12 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,16 +77,20 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.marcos.myspentapp.ui.database.CardData
-import com.marcos.myspentapp.ui.state.CardUiState
-import com.marcos.myspentapp.ui.state.TypeGasto
-import com.marcos.myspentapp.ui.viewmodel.CardViewModel
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.marcos.myspentapp.R
+import com.marcos.myspentapp.data.models.Gastos
+import com.marcos.myspentapp.data.models.TypeGasto
+import com.marcos.myspentapp.data.models.toGastosMap
+import com.marcos.myspentapp.ui.viewmodel.GastoViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
+import java.util.Locale.getDefault
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(cashViewModel: CashViewModel) {
+fun TopBar(cashViewModel: CashViewModel = viewModel()) {
 
     var expanded by remember { mutableStateOf(false) }
 
@@ -95,7 +100,7 @@ fun TopBar(cashViewModel: CashViewModel) {
     TopAppBar(
         expandedHeight = 30.dp,
         modifier = Modifier,
-        colors = TopAppBarDefaults.mediumTopAppBarColors(
+        colors = topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = MaterialTheme.colorScheme.primary
         ),
@@ -189,29 +194,40 @@ fun TopBar(cashViewModel: CashViewModel) {
 @Composable
 fun MySpentApp(
     modifier: Modifier = Modifier,
-    cashViewModel: CashViewModel,
-    cardViewModel: CardViewModel,
-    userViewModel: UserViewModel
-) {
-    val context = LocalContext.current
+    cashViewModel: CashViewModel = viewModel(),
+    gastoViewModel: GastoViewModel,
+    userViewModel: UserViewModel,
+){
 
     val emailAtivo = userViewModel.userState.email
 
     LaunchedEffect(emailAtivo) {
         if (emailAtivo.isNotBlank()) {
-            userViewModel.loadUser(context, emailAtivo)
-            cardViewModel.loadCards(context, emailAtivo)
+            userViewModel.loadUser(emailAtivo)
+            gastoViewModel.loadCards(emailAtivo)
         }
     }
 
     // Coleta da lista de cards
-    val cards by cardViewModel.cards.collectAsState()
+    val cards = gastoViewModel.gastoState
+    val listGasto = cards.toGastosMap()
+
+    val colorsGasto = listOf(
+        Color(0xFFFFEB3B),
+        Color(0xFF64B5F6),
+        Color(0xFF81C784),
+        Color(0xFF673AB7),
+        Color(0xFF9C27B0),
+        Color(0xFFE91E63),
+        Color(0xFFF44336),
+        Color(0xFF009688),
+        Color(0xFF00BCD4),
+    )
 
     var showDialogCash by remember { mutableStateOf(false) }
 
     // valor original em BRL
     val ganhosOriginal by remember { mutableDoubleStateOf(userViewModel.userState.ganhos) }
-
 
     // soma dos gastos em BRL
     val totalGastosOriginal = cards.sumOf { it.value }
@@ -230,7 +246,8 @@ fun MySpentApp(
     }
 
     // formatados
-    val ganhosFormatados = cashViewModel.formatCurrency(ganhosConvertidos)
+    val usuario by userViewModel.usuario.collectAsState()
+
     val gastosFormatados = cashViewModel.formatCurrency(gastosConvertidos)
 
     // Layout principal
@@ -280,7 +297,7 @@ fun MySpentApp(
                         Text("Entrada", fontSize = 16.sp)
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            ganhosFormatados,
+                            usuario?.ganhos?.let { cashViewModel.formatCurrency(it) } ?: "0,00",
                             fontSize = 30.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -297,7 +314,7 @@ fun MySpentApp(
                         modifier = Modifier.weight(1f).padding(end = 20.dp),
                         horizontalAlignment = Alignment.End
                     ) {
-                        Text("Gastos", fontSize = 16.sp)
+                        Text("Saída", fontSize = 16.sp)
                         Spacer(Modifier.height(10.dp))
                         Text(
                             gastosFormatados,
@@ -315,7 +332,7 @@ fun MySpentApp(
             val scope = rememberCoroutineScope()
 
             // Lista -- Gráfico
-            TabRow(
+            SecondaryTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.primary
@@ -346,24 +363,38 @@ fun MySpentApp(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                key = { page -> cardViewModel.cards.value.hashCode() to page }
+                key = { page -> "page_$page" }
+
             ) { page ->
                 when (page) {
                     0 -> {
                         ListaDeGastos(
-                            cardViewModel = cardViewModel,
+                            gastoViewModel = gastoViewModel,
                             cashViewModel = cashViewModel,
                             userViewModel = userViewModel,
-                            context = context
+                            gastos = cards
                         )
                     }
 
                     1 -> {
-                        SectorBalanco(
-                            ganhos = ganhosConvertidos,
-                            gastos = gastosConvertidos,
-                            modifier = Modifier.padding(top = 24.dp)
-                        )
+                        Column(
+                            modifier = Modifier
+                                .verticalScroll(rememberScrollState())
+                                .fillMaxSize()
+                                .padding(top = 24.dp)
+                        ) {
+                            SectorBalanco(
+                                ganhos = ganhosConvertidos,
+                                gastos = gastosConvertidos,
+                            )
+
+                            Spacer(Modifier.height(24.dp))
+
+                            SectorGastos(
+                                gastosPorTipo = listGasto,
+                                colors = colorsGasto
+                            )
+                        }
                     }
                 }
             }
@@ -378,7 +409,7 @@ fun MySpentApp(
                     modifier = Modifier.fillMaxWidth(0.9f).height(250.dp)
                 ) {
                     DetalheInOut(
-                        cashIn = "",
+                        cashIn = usuario?.ganhos?.let { cashViewModel.formatCurrency(it) } ?: "0,00",
                         userViewModel = userViewModel,
                         onFechar = { showDialogCash = false }
                     )
@@ -391,10 +422,10 @@ fun MySpentApp(
 
 
 @Composable
-fun CardGasto(
-    card: CardUiState,
+fun InfoGasto(
+    card: Gastos,
     modifier: Modifier,
-    cashViewModel: CashViewModel,
+    cashViewModel: CashViewModel = viewModel(),
 ) {
     val context = LocalContext.current
 
@@ -411,14 +442,14 @@ fun CardGasto(
         card.imageUri?.let { uri ->
             try {
                 if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(
+                    getBitmap(
                         context.contentResolver,
-                        uri
+                        uri.toUri()
                     ).asImageBitmap()
                 } else {
                     val source = ImageDecoder.createSource(
                         context.contentResolver,
-                        uri
+                        uri.toUri()
                     )
                     ImageDecoder.decodeBitmap(source).asImageBitmap()
                 }
@@ -472,26 +503,28 @@ fun CardGasto(
                     .fillMaxSize()
                     .padding(start = 10.dp, top = 10.dp, end = 10.dp)
             ) {
-                Text(text = card.title.uppercase(), fontSize = 16.sp)
+                Text(text = card.title.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(
+                        getDefault()
+                    ) else it.toString()
+                }, fontSize = 16.sp)
                 Text(text = formatted, fontSize = 16.sp)
             }
         }
     }
 }
 
-
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "FrequentlyChangingValue")
 @Composable
 fun ListaDeGastos(
-    cardViewModel: CardViewModel,
+    gastoViewModel: GastoViewModel,
     cashViewModel: CashViewModel,
     userViewModel: UserViewModel,
-    context: Context
+    gastos: List<Gastos>
 ) {
-    val gastos by cardViewModel.cards.collectAsState()
-    val selectedIds by cardViewModel.selectedIds.collectAsState()
+    val selectedIds by gastoViewModel.selectedIds.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
-    val editingCard by cardViewModel.editingCard.collectAsState()
+    val editingCard by gastoViewModel.editingCard.collectAsState()
 
     // Layout Lista
     Scaffold(
@@ -500,10 +533,7 @@ fun ListaDeGastos(
             if (selectedIds.isNotEmpty()) {
                 FloatingActionButton(
                     onClick = {
-                        cardViewModel.removeSelected(
-                            context = context,
-                            userEmail = userViewModel.userState.email
-                        )
+                        gastoViewModel.removeSelected()
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(50.dp)
@@ -580,20 +610,20 @@ fun ListaDeGastos(
                             .combinedClickable(
                                 onClick = {
                                     if (selectedIds.isEmpty()) {
-                                        cardViewModel.openEdit(gasto)
+                                        gastoViewModel.openEdit(gasto)
                                     } else {
-                                        cardViewModel.toggleSelection(gasto.id)
+                                        gastoViewModel.toggleSelection(gasto.id)
                                     }
                                 },
                                 onLongClick = {
-                                    cardViewModel.toggleSelection(gasto.id)
+                                    gastoViewModel.toggleSelection(gasto.id)
                                 }
                             )
 
 
                         // ENTRADA
                         if (itemInfo == null) {
-                            CardGasto(
+                            InfoGasto(
                                 card = gasto,
                                 cashViewModel = cashViewModel,
                                 modifier = modifierBase.graphicsLayer {
@@ -622,7 +652,7 @@ fun ListaDeGastos(
                         val alpha = 1f - progress
                         val scale = 1f - (progress * 0.15f)
 
-                        CardGasto(
+                        InfoGasto(
                             card = gasto,
                             cashViewModel = cashViewModel,
                             modifier = modifierBase.graphicsLayer {
@@ -653,13 +683,12 @@ fun ListaDeGastos(
                     imageUri = null,
                     title = "",
                     value = "",
-                    tipo = TypeGasto.NONE,
+                    tipo = TypeGasto.NONE.name,
                     onFechar = { showDialog = false }
                 ) { imageUri, title, value, type ->
 
-                    cardViewModel.addCard(
-                        context = context,
-                        card = CardData(
+                    gastoViewModel.addCard(
+                        card = Gastos(
                             imageUri = imageUri.toString(),
                             title = title,
                             value = value.toDoubleOrNull() ?: 0.0,
@@ -675,7 +704,7 @@ fun ListaDeGastos(
 
     // Dialog para editar card
     if (editingCard != null) {
-        Dialog(onDismissRequest = { cardViewModel.closeEdit() }) {
+        Dialog(onDismissRequest = { gastoViewModel.closeEdit() }) {
             Card(
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
@@ -685,16 +714,15 @@ fun ListaDeGastos(
             ) {
                 DetalheGasto(
                     imageRes = R.drawable.ms1,
-                    imageUri = editingCard!!.imageUri,
+                    imageUri = editingCard!!.imageUri?.toUri(),
                     title = editingCard!!.title,
                     value = editingCard!!.value.toString(),
                     tipo = editingCard!!.type,
-                    onFechar = { cardViewModel.closeEdit() }
+                    onFechar = { gastoViewModel.closeEdit() }
                 ) { newImage, newTitle, newValue, newType->
 
-                    cardViewModel.updateCardInBase(
-                        context = context,
-                        updatedCard = CardData(
+                    gastoViewModel.updateCardInBase(
+                        card = Gastos(
                         id = editingCard!!.id,
                         userEmail = userViewModel.userState.email,
                         imageUri = newImage.toString(),
@@ -702,7 +730,7 @@ fun ListaDeGastos(
                         value = newValue.toDoubleOrNull() ?: 0.0,
                         type = newType.name,
                         ),
-                        onResult = { cardViewModel.closeEdit() }
+                        onResult = { gastoViewModel.closeEdit() }
                     )
 
                 }

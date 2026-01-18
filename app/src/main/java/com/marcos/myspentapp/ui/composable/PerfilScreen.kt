@@ -1,11 +1,11 @@
-package com.marcos.myspentapp
+package com.marcos.myspentapp.ui.composable
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
-import android.provider.MediaStore
+import android.provider.MediaStore.Images.Media.getBitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -26,8 +26,23 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,36 +57,58 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.marcos.myspentapp.ui.database.UserSaved
 import com.marcos.myspentapp.ui.theme.colorTextSecondary
-import com.marcos.myspentapp.ui.viewmodel.CardViewModel
+import com.marcos.myspentapp.ui.viewmodel.GastoViewModel
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 import androidx.core.net.toUri
+import com.marcos.myspentapp.R
+import com.marcos.myspentapp.ui.Routes
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopPerfilBar() {
+    TopAppBar(
+        title = {
+            Text(
+                "Meu Perfil",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 10.dp)
+            )
+        },
+        colors = topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            titleContentColor = MaterialTheme.colorScheme.primary
+        ),
+        expandedHeight = 30.dp,
+        modifier = Modifier.background(MaterialTheme.colorScheme.background)
+    )
+}
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilScreen(
-    navController: NavController = rememberNavController(),
+    navController : NavController,
     userViewModel: UserViewModel,
-    cardViewModel: CardViewModel
+    gastoViewModel: GastoViewModel
 )
  {
-    var showConf by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
+    var showConf by remember { mutableStateOf(false) }
     val activeUser by userViewModel.usuario.collectAsState()
+
 
      // Carrega o usuário quando a tela abrir
      LaunchedEffect(Unit) {
-         userViewModel.loadUser(context, userViewModel.userState.email)
+         userViewModel.loadUser(userViewModel.userState.email)
      }
 
     // FOTO DO PERFIL
@@ -81,7 +118,7 @@ fun PerfilScreen(
          fotoUri?.let { uri ->
              try {
                  if (Build.VERSION.SDK_INT < 28) {
-                     MediaStore.Images.Media.getBitmap(
+                     getBitmap(
                          context.contentResolver,
                          uri
                      ).asImageBitmap()
@@ -89,32 +126,14 @@ fun PerfilScreen(
                      val source = ImageDecoder.createSource(context.contentResolver, uri)
                      ImageDecoder.decodeBitmap(source).asImageBitmap()
                  }
-             } catch (e: Exception) {
+             } catch (_: Exception) {
                  null
              }
          }
      }
 
     Scaffold(
-        // TopBar
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Meu Perfil",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 10.dp)
-                    )
-                },
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                ),
-                expandedHeight = 30.dp,
-                modifier = Modifier.background(MaterialTheme.colorScheme.background)
-            )
-        }
+        topBar = { TopPerfilBar() }
     ) {
         // Layout Perfil
         Column(
@@ -217,7 +236,8 @@ fun PerfilScreen(
         visible = showConf,
         onDismiss = { showConf = false },
         userViewModel = userViewModel,
-        cardViewModel = cardViewModel
+        gastoViewModel = gastoViewModel,
+        navController = navController
     )
 }
 
@@ -266,8 +286,8 @@ fun CardConf(
     visible: Boolean,
     onDismiss: () -> Unit,
     userViewModel: UserViewModel,
-    cardViewModel: CardViewModel,
-    navController: NavController = rememberNavController()
+    gastoViewModel: GastoViewModel,
+    navController: NavController
 ) {
 
     // Configurações de usuário
@@ -293,9 +313,6 @@ fun CardConf(
 
     var newCode by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -386,18 +403,16 @@ fun CardConf(
                     onClick = {
                         if (newCode.isNotBlank()) {
                             userViewModel.updateCode(newCode)
-                            userViewModel.updateUserData(
-                                context,
-                                UserSaved(
-                                    user.email,
-                                    user.nome,
-                                    user.senha,
-                                    user.fotoUri.toString(),
-                                    newCode,
-                                    user.ganhos,
-                                    user.darkTheme,
-                                    user.initApp
-                                )
+                            userViewModel.updateUser(
+                                emailAtual = user.email,
+                                user.email,
+                                user.nome,
+                                user.senha,
+                                user.fotoUri.toString(),
+                                newCode,
+                                user.ganhos,
+                                user.darkTheme,
+                                user.initApp
                             )
                             newCode = ""
                             onDismiss()
@@ -445,18 +460,16 @@ fun CardConf(
                         checked = isDarkMode,
                         onCheckedChange = {
                             val changeMode = userViewModel.toggleTheme()
-                            userViewModel.updateUserData(
-                                context,
-                                UserSaved(
-                                    user.email,
-                                    user.nome,
-                                    user.senha,
-                                    user.fotoUri.toString(),
-                                    user.codeRescue,
-                                    user.ganhos,
-                                    changeMode,
-                                    user.initApp
-                                )
+                            userViewModel.updateUser(
+                                user.email,
+                                user.email,
+                                user.nome,
+                                user.senha,
+                                user.fotoUri.toString(),
+                                user.codeRescue,
+                                user.ganhos,
+                                changeMode,
+                                user.initApp
                             )
                             onDismiss()
                         },
@@ -512,8 +525,8 @@ fun CardConf(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        cardViewModel.clearCards(context, user.email)
-                        userViewModel.clearUser(context)
+                        gastoViewModel.clearCards(user.email)
+                        userViewModel.deleteUser()
                         navController.navigate(Routes.LOGIN)
                         showDeleteDialog = false
                     }
@@ -548,11 +561,13 @@ fun PerfilEdit(
     val activeUser by userViewModel.usuario.collectAsState()
 
 
-    var nome by remember { mutableStateOf(user.nome) }
+    var nome by remember { mutableStateOf(activeUser?.name) }
     var email by remember { mutableStateOf(activeUser?.email ?: "") }
 
-    var senha by remember { mutableStateOf(user.senha) }
+    var senha by remember { mutableStateOf(activeUser?.senha) }
     var fotoUri by remember { mutableStateOf(activeUser?.fotoUri) }
+
+    var erroMsg by remember { mutableStateOf("") }
 
     val context = LocalContext.current
 
@@ -577,12 +592,12 @@ fun PerfilEdit(
         fotoAtual?.let { uri ->
             try {
                 if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri).asImageBitmap()
+                    getBitmap(context.contentResolver, uri).asImageBitmap()
                 } else {
                     val source = ImageDecoder.createSource(context.contentResolver, uri)
                     ImageDecoder.decodeBitmap(source).asImageBitmap()
                 }
-            } catch(e: Exception) {
+            } catch(_: Exception) {
                 null
             }
         }
@@ -600,7 +615,7 @@ fun PerfilEdit(
                         modifier = Modifier.padding(start = 10.dp)
                     )
                 },
-                colors = TopAppBarDefaults.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          mediumTopAppBarColors(
+                colors = topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.primary
                 ),
@@ -649,13 +664,22 @@ fun PerfilEdit(
 
             Spacer(modifier = Modifier.height(25.dp))
 
+            if (erroMsg.isNotEmpty()) {
+                Text(
+                    text = erroMsg,
+                    color = Color.Red,
+                    fontSize = 14.sp
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+
             OutlinedTextField(
-                value = nome,
+                value = nome!!,
                 onValueChange = { nome = it },
                 label = { Text("Nome") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Next,
+                    imeAction = ImeAction.Next,
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -676,7 +700,7 @@ fun PerfilEdit(
                 onValueChange = { email = it },
                 label = { Text("E-mail") },
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Next,
+                    imeAction = ImeAction.Next,
                     keyboardType = KeyboardType.Email
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -694,12 +718,12 @@ fun PerfilEdit(
             Spacer(modifier = Modifier.height(15.dp))
 
             OutlinedTextField(
-                value = senha,
+                value = senha!!,
                 onValueChange = { senha = it },
                 label = { Text("Senha") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+                    imeAction = ImeAction.Done,
                     keyboardType = KeyboardType.Password
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -734,18 +758,31 @@ fun PerfilEdit(
 
                 Button(
                     onClick = {
-                        userViewModel.updateUserData(
-                            context,
-                            UserSaved(
-                                activeUser?.email ?: "",
-                                nome,
-                                senha,
-                                fotoUri,
-                                user.codeRescue,
-                                user.ganhos,
-                                user.darkTheme,
-                                user.initApp
-                            )
+                        if (email.isBlank() || senha!!.isBlank()) {
+                            erroMsg = "Preencha todos os campos"
+                            return@Button
+                        }
+
+                        if (!email.contains("@") || !email.contains(".com")) {
+                            erroMsg = "E-mail inválido"
+                            return@Button
+                        }
+
+                        if (senha!!.length < 6) {
+                            erroMsg = "A senha deve ter no mínimo 6 caracteres"
+                            return@Button
+                        }
+
+                        userViewModel.updateUser(
+                            user.email,
+                            email,
+                            nome,
+                            senha,
+                            fotoUri,
+                            user.codeRescue,
+                            user.ganhos,
+                            user.darkTheme,
+                            user.initApp
                         )
                         navController.navigate(Routes.PROFILE)
                     },
@@ -758,6 +795,8 @@ fun PerfilEdit(
         }
     }
 }
+
+
 
 
 

@@ -1,11 +1,11 @@
-package com.marcos.myspentapp
+package com.marcos.myspentapp.ui.composable
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
-import android.provider.MediaStore
+import android.provider.MediaStore.Images.Media.getBitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -36,10 +36,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.marcos.myspentapp.ui.database.UserSaved
+import com.marcos.myspentapp.data.models.Users
 import com.marcos.myspentapp.ui.viewmodel.UserViewModel
 import androidx.core.net.toUri
-
+import com.marcos.myspentapp.R
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,13 +48,9 @@ fun LoginScreen(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
-    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     val user by userViewModel.usuario.collectAsState()
-
-
-
 
     Scaffold {
         // Layout login
@@ -145,31 +141,28 @@ fun LoginScreen(
             Button(
                 onClick = {
                     userViewModel.login(
-                        context = context,
                         email = email,
                         senha = senha
                     ) { success ->
                         if (success) {
                             navController.navigate("main") {
-                                popUpTo("login") { inclusive = true }
+                                popUpTo("login") { inclusive = false }
                             }
                         } else {
                             itensChecked = true
                         }
                     }
                     if(user?.initApp == false) {
-                        userViewModel.updateUserData(
-                            context,
-                            UserSaved(
+                        userViewModel.updateUser(
+                            user?.email ?: "",
                                 user?.email ?: "",
-                                user?.name ?: "",
-                                user?.senha ?: "",
-                                user?.fotoUri,
-                                user?.codeRescue ?: "",
-                                user?.ganhos ?: 0.00,
-                                user?.darkTheme ?: false,
-                                true
-                            )
+                            user?.name ?: "",
+                            user?.senha ?: "",
+                            user?.fotoUri,
+                            user?.codeRescue ?: "",
+                            user?.ganhos ?: 0.00,
+                            user?.darkTheme ?: false,
+                            true
                         )
                     }
                 },
@@ -225,7 +218,7 @@ fun RegisterScreen(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
-    val user = userViewModel.userState
+    val user = userViewModel.usuario.collectAsState().value
 
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
@@ -372,7 +365,7 @@ fun RegisterScreen(
                         return@Button
                     }
 
-                    if (user.email == email) {
+                    if (user?.email == email) {
                         erroMsg = "E-mail já registrado"
                         return@Button
                     }
@@ -430,7 +423,7 @@ fun RegisterScreen(
 fun RegisterScreenPart2(
     navController: NavController,
     userViewModel: UserViewModel,
-    fotoUri: String? = null
+    fotoUri: String? = null,
 ) {
 
     var fotoUri by remember { mutableStateOf(fotoUri) }
@@ -456,12 +449,13 @@ fun RegisterScreenPart2(
 
 
     // Carregar imagem (2 meios)
+    @Suppress("DEPRECATION")
     val bitmap: ImageBitmap? = remember(fotoUri) {
         fotoUri?.let { uriString ->
             try {
                 val uri = uriString.toUri()
                 if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri).asImageBitmap()
+                    getBitmap(context.contentResolver, uri).asImageBitmap()
                 } else {
                     val source = ImageDecoder.createSource(context.contentResolver, uri)
                     ImageDecoder.decodeBitmap(source).asImageBitmap()
@@ -601,9 +595,9 @@ fun RegisterScreenPart2(
 
                     // CRIA A CONTA
                     // SALVAR USUÁRIO
-                    userViewModel.saveUserData(
-                        context,
-                        UserSaved(
+                    userViewModel.updateNome(userName)
+                    userViewModel.saveUser(
+                        Users(
                             userViewModel.userState.email,
                             userName,
                             userViewModel.userState.senha,

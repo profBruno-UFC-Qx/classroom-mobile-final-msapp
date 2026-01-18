@@ -1,9 +1,10 @@
 package com.marcos.myspentapp.ui.state
 
 import android.net.Uri
+import com.marcos.myspentapp.data.models.TypeGasto
 import java.util.UUID
 
-data class CardUiState (
+data class GastoUiState (
     val id: String = UUID.randomUUID().toString(),
     val imageUri: Uri?,
     val title: String,
@@ -11,14 +12,3 @@ data class CardUiState (
     val type: TypeGasto = TypeGasto.NONE
 )
 
-enum class TypeGasto {
-    LAZER,
-    MORADIA,
-    EDUCACAO,
-    IMPREVISTOS,
-    ALIMENTACAO,
-    TRANSPORTE,
-    SAUDE,
-    OUTROS,
-    NONE
-}

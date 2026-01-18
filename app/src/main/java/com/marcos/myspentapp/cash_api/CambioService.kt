@@ -1,4 +1,4 @@
-package com.marcos.myspentapp.ui.cash_api
+package com.marcos.myspentapp.cash_api
 
 import retrofit2.http.GET
 import retrofit2.http.Path
